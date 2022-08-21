@@ -1,5 +1,5 @@
 ---
-title: Unity で Google Mible Ads (AdMob) を使う
+title: Unity で Google Mobile Ads (AdMob) を使う
 tags: Unity AdMob Android iOS C#
 ---
 ## 前提
