@@ -15,6 +15,9 @@ public class SwitchPanel : MonoBehaviour {
     /// <summary>累積獲得数表示体</summary>
     [SerializeField] private Text CoinsText = default;
 
+    /// <summary>情報表示体</summary>
+    [SerializeField] private Text InfoPanel = default;
+
     // 広告シーン
     public static readonly string AdSceneBanner = "banner";
     public static readonly string AdSceneInterstitial = "interstitial";
@@ -34,6 +37,28 @@ public class SwitchPanel : MonoBehaviour {
         AdMobApi.SetActive (AdSceneBanner);
         new AdMobApi (AdSceneInterstitial);
         new AdMobApi (AdSceneRewarded, OnAdRewarded);
+
+        var adid = GetAdvertisingIdentifier ();
+        InfoPanel.text = (adid == null) ? "No AdId" : $"AdId: {adid}";
+
+        // AdIdの取得 (Application.RequestAdvertisingIdentifierAsync()がAndroid非対応になったので)
+        string GetAdvertisingIdentifier () {
+            string advertisingID = null;
+            if (Application.platform == RuntimePlatform.Android) {
+                try {
+                    using (var player = new AndroidJavaClass ("com.unity3d.player.UnityPlayer"))
+                    using (var currentActivity = player.GetStatic<AndroidJavaObject> ("currentActivity"))
+                    using (var client = new AndroidJavaClass ("com.google.android.gms.ads.identifier.AdvertisingIdClient"))
+                    using (var adInfo = client.CallStatic<AndroidJavaObject> ("getAdvertisingIdInfo", currentActivity)) {
+                        advertisingID = adInfo.Call<string> ("getId").ToString ();
+                    }
+                }
+                catch (System.Exception e) {
+                    Debug.LogError (e);
+                }
+            }
+            return advertisingID;
+        }
     }
 
     /// <summary>獲得時コールバック</summary>
