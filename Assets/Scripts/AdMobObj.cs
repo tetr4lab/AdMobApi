@@ -461,9 +461,11 @@ namespace GoogleMobileAds.Utility {
 		private void Load () {
 			if (!valid) { return; }
 			Debug.Log ($"Ad Load {Scene} {type}");
+#if (UNITY_ANDROID || UNITY_IOS)
 			if (rewardedVideo == null && interstitial == null && bannerView == null) {
 				throw new ArgumentNullException ("no ad instance");
 			}
+#endif
 			if (state != Status.LOADING && state != Status.LOADED) {
 #if (UNITY_ANDROID || UNITY_IOS)
 				AdRequest request = new AdRequest.Builder ().Build ();  // Create an empty ad request.
@@ -519,7 +521,7 @@ namespace GoogleMobileAds.Utility {
 			request = state = Status.DELETED;
 		}
 
-#region event handler
+			#region event handler
 
 #if (UNITY_ANDROID || UNITY_IOS)
 		/// <summary>ロードされた Called when an ad request has successfully loaded.</summary>
@@ -571,11 +573,11 @@ namespace GoogleMobileAds.Utility {
 
 #endif
 
-#endregion
+			#endregion
 
 
 	}
 
 #endif
 
-}
+		}

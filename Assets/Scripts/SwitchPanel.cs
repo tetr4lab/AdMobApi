@@ -38,27 +38,31 @@ public class SwitchPanel : MonoBehaviour {
         new AdMobApi (AdSceneInterstitial);
         new AdMobApi (AdSceneRewarded, OnAdRewarded);
 
-        var adid = GetAdvertisingIdentifier ();
-        InfoPanel.text = (adid == null) ? "No AdId" : $"AdId: {adid}";
-
-        // AdIdの取得 (Application.RequestAdvertisingIdentifierAsync()がAndroid非対応になったので)
-        string GetAdvertisingIdentifier () {
-            string advertisingID = null;
-            if (Application.platform == RuntimePlatform.Android) {
-                try {
-                    using (var player = new AndroidJavaClass ("com.unity3d.player.UnityPlayer"))
-                    using (var currentActivity = player.GetStatic<AndroidJavaObject> ("currentActivity"))
-                    using (var client = new AndroidJavaClass ("com.google.android.gms.ads.identifier.AdvertisingIdClient"))
-                    using (var adInfo = client.CallStatic<AndroidJavaObject> ("getAdvertisingIdInfo", currentActivity)) {
-                        advertisingID = adInfo.Call<string> ("getId").ToString ();
-                    }
-                }
-                catch (System.Exception e) {
-                    Debug.LogError (e);
+        // AdIdの取得
+        string adid = null;
+        if (Application.platform == RuntimePlatform.Android) {
+            // Application.RequestAdvertisingIdentifierAsync()がAndroid非対応になったので
+            try {
+                using (var player = new AndroidJavaClass ("com.unity3d.player.UnityPlayer"))
+                using (var currentActivity = player.GetStatic<AndroidJavaObject> ("currentActivity"))
+                using (var client = new AndroidJavaClass ("com.google.android.gms.ads.identifier.AdvertisingIdClient"))
+                using (var adInfo = client.CallStatic<AndroidJavaObject> ("getAdvertisingIdInfo", currentActivity)) {
+                    adid = adInfo.Call<string> ("getId").ToString ();
                 }
             }
-            return advertisingID;
+            catch (System.Exception e) {
+                Debug.LogError (e);
+            }
+        } else {
+            if (Application.RequestAdvertisingIdentifierAsync (
+                (string advertisingId, bool trackingEnabled, string error) => {
+                    InfoPanel.text = $"AdId: {advertisingId} (tracking={trackingEnabled}, error={error})";
+                }
+            )) {
+                adid = "wait...";
+            }
         }
+        InfoPanel.text = (adid == null) ? "No AdId" : $"AdId: {adid}";
     }
 
     /// <summary>獲得時コールバック</summary>
