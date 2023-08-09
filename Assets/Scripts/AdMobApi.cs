@@ -1,9 +1,10 @@
-//	Copyright© tetr4lab.
+﻿//	Copyright© tetr4lab.
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 
@@ -13,7 +14,7 @@ namespace GoogleMobileAds.Utility {
 	public class AdMobApi {
 
 		/// <summary>状態/要求</summary>
-		private enum Status {
+		protected enum Status {
 			NONE = 0,
 			LOADING,
 			LOADED,
@@ -38,13 +39,13 @@ namespace GoogleMobileAds.Utility {
 				}
 			}
 		}
-		private static bool allow;
+		protected static bool allow;
 		/// <summary>初期化完了</summary>
 		public static bool Acceptable;
 		/// <summary>生成された広告一覧</summary>
-		private static List<AdMobApi> adsList;
-		/// <summary>再入抑制用 (初期化完了に使うべからず)</summary>
-		private static bool initialized;
+		protected static List<AdMobApi> adsList;
+		/// <summary>再入抑制用</summary>
+		protected static bool isInitializing;
 
 		/// <summary>指定シーンの広告一覧を得る</summary>
 		public static List<AdMobApi> GetSceneAds (string scene) => adsList?.FindAll (ad => ad.Scene == scene) ?? new List<AdMobApi> { };
@@ -52,13 +53,34 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>指定のシーンと番号の広告を得る</summary>
 		public static AdMobApi GetSceneAds (string scene, int unit) => adsList?.Find (ad => ad.Scene == scene && ad.Unit == unit);
 
+		/// <summary>シーンの破棄</summary>
+		/// <param name="scene">シーン (nullなら全て)</param>
+		public static void Destroy (string scene = null) {
+			if (string.IsNullOrEmpty (scene)) {
+				foreach (var ad in adsList) {
+					ad.Remove ();
+				}
+				adsList.Clear ();
+			} else {
+				foreach (var ad in GetSceneAds (scene)) {
+					ad.Destroy ();
+				}
+			}
+		}
+
 		/// <summary>クラス初期化</summary>
-		public static async Task Init () {
-			if (Allow && !initialized) {
+		/// <param name="onCompleted">完了時コールバック</param>
+		public static async Task Initialize (Action<InitializationStatus> onCompleted = null) {
+			if (Allow && !isInitializing) {
 				Debug.Log ("AdMobApi Init");
-				initialized = true;
+				isInitializing = true;
 				adsList = new List<AdMobApi> { };
-				MobileAds.Initialize (status => { Acceptable = true; }); // Initialize the Google Mobile Ads SDK.
+				MobileAds.Initialize (status => {
+					Acceptable = true;
+					if (onCompleted != null) {
+						onCompleted (status);
+					}
+				});
 				await TaskEx.DelayUntil (() => Acceptable);
 				Debug.Log ($"AdMobApi Inited {Acceptable}");
 			}
@@ -128,7 +150,7 @@ namespace GoogleMobileAds.Utility {
 		}
 #endif
 
-#endregion
+		#endregion
 
 		// メンバー要素
 
@@ -141,20 +163,68 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>タイプ (外部アクセス用)</summary>
 		public AdType Type => type;
 
-		private BannerView bannerView; // バナー広告
-		private InterstitialAd interstitial; // インタースティシャル広告
-		private RewardedAd rewardedVideo; // 動画リワード広告
-		private EventHandler<Reward> onAdRewarded;	 // 動画リワード報酬時処理
-		private AdType type; // タイプ
-		private Status state; // 状態
-		private Status request; // 要求
-		private AdSize adSize; // バナーサイズ
-		private AdPosition adPosition; // バナー位置
-		private bool valid => state != Status.DELETED; // 有効
-		
-		/// <summary>バナーのピクセルサイズ (SmartBannerでは実際よりも大きい場合がある)</summary>
-		public Vector2 bannerSize => (valid && bannerView != null) ? new Vector2 (bannerView.GetWidthInPixels (), bannerView.GetHeightInPixels ()) : Vector2.zero;
-				
+		protected BannerView bannerView; // バナー広告
+		protected InterstitialAd interstitial; // インタースティシャル広告
+		protected RewardedAd rewardedVideo; // 動画リワード広告
+		protected Action<Reward> onAdRewarded;   // 動画リワード報酬時処理
+		protected AdType type; // タイプ
+		protected Status state; // 状態
+		protected Status request; // 要求
+		protected AdSize adSize; // バナーサイズ
+		protected AdPosition adPosition; // バナー位置
+		protected bool valid => state != Status.DELETED; // 有効
+
+#if UNITY_EDITOR
+		/// <summary>広告表示体オブジェクト名</summary>
+		protected string gameObjectName {
+			get {
+				if (adSize == AdSize.Banner) {
+					return "BANNER";
+#pragma warning disable CS0618 // 型またはメンバーが旧型式です
+				} else if (adSize == AdSize.SmartBanner) {
+#pragma warning restore CS0618 // 型またはメンバーが旧型式です
+					return "SMART_BANNER";
+				} else if (adSize == AdSize.MediumRectangle) {
+					return "MEDIUM_RECTANGLE";
+				} else if (adSize == AdSize.IABBanner) {
+					return "FULL_BANNER";
+				} else if (adSize == AdSize.Leaderboard) {
+					return "LEADERBOARD";
+				} else if (adSize.Width == 320 && adSize.Height == 100) {
+					return "LARGE_BANNER";
+				} else if (adSize.Width == -1 && adSize.Height == 0) {
+					return "ADAPTIVE";
+				}
+				return null;
+			}
+		}
+#endif
+
+		/// <summary>バナーのサイズ</summary>
+		public Vector2 bannerSize {
+			get {
+				if (valid && bannerView != null) {
+#if UNITY_EDITOR
+					// エディタではCanvasScalerが考慮されていないので実物のスケールを適用
+					var size = new Vector2 (bannerView.GetWidthInPixels (), bannerView.GetHeightInPixels ());
+					var rectTransform = AdMobObj.GetAdRectTransform (name: gameObjectName, width: size.x, height: size.y);
+					if (rectTransform != null) {
+						return size * rectTransform.lossyScale;
+					}
+					// 見つからなければ広告サイズから推定
+					size = new Vector2 (adSize.Width, adSize.Height);
+					if (size.x <= 0f) { size.x = AdSize.FullWidth; }
+					if (size.y <= 0f) { size.y = 90; }
+					return size * (Screen.dpi / 160);
+#else
+					// 実機では申告サイズ通りとみなす
+					return new Vector2 (bannerView.GetWidthInPixels (), bannerView.GetHeightInPixels ());
+#endif
+				}
+				return Vector2.zero;
+			}
+		}
+
 		/// <summary>表示制御 (要求レベル)</summary>
 		public bool ActiveSelf {
 			get => valid && request == Status.SHOWN && (
@@ -166,14 +236,15 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>ロード済み</summary>
-		public bool isLoaded => valid && ((interstitial != null && interstitial.IsLoaded ()) || (rewardedVideo != null && rewardedVideo.IsLoaded ()));
+		public bool IsLoaded => valid && (state == Status.LOADED || state == Status.SHOWN || state == Status.HIDDEN);
 
 		/// <summary>コンストラクタ インタースティシャル</summary>
 		public AdMobApi (string scene) {
 			Debug.Log ($"AdMobApi {scene}");
 			if (GetSceneAds (scene)?.Count > 0) {
-				throw new ArgumentException ($"Duplicate scene {scene}");
-            }
+				// 唯一のユニットでなければなりません
+				throw new ArgumentException ($"Duplicate set {scene}");
+			}
 			type = AdType.Interstitial;
 			Scene = scene;
 			Create ();
@@ -182,13 +253,24 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>コンストラクタ バナー</summary>
 		public AdMobApi (string scene, AdSize size, AdPosition pos) {
-			Debug.Log ($"AdMobApi {scene} {size} {pos}");
 			var ads = GetSceneAds (scene);
-			foreach (var ad in ads) {
-				if (ad.type != AdType.Banner) {
-					throw new ArgumentException ($"Duplicate scene {scene}");
+			Debug.Log ($"AdMobApi {scene}[{ads.Count}] ({size.Width}, {size.Height}) {pos} {size.AdType}");
+			foreach (var ad in adsList) {
+				if (ad.Scene == scene) {
+					// 表示の重複
+					if (ad.type != AdType.Banner) {
+						// 全画面広告が存在します
+						throw new ArgumentException ($"Duplicate set {scene} {ad.type} != {AdType.Banner}");
+					} else if (ad.adPosition == pos) {
+						// 既にバナーがある位置です
+						throw new ArgumentException ($"Duplicate position {scene} {pos} {ads.Count} != {ad.Unit}");
+					}
 				}
-            }
+				if (ad.adSize == size && ad.adPosition != pos) {
+					// 広告ユニットの多重使用 (同じサイズのバナーを異なる場所に配置できません)
+					throw new ArgumentException ($"Duplicate unit {scene} ({size.Width}, {size.Height}) {pos} != {ad.adPosition}");
+				}
+			}
 			adSize = size;
 			adPosition = pos;
 			type = AdType.Banner;
@@ -198,13 +280,17 @@ namespace GoogleMobileAds.Utility {
 			adsList.Add (this);
 		}
 
+		/// <summary>コンストラクタ アンカーアダプティブバナー</summary>
+		public AdMobApi (string scene, bool bottom) : this (scene, AdSize.GetCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth (AdSize.FullWidth), bottom ? AdPosition.Bottom : AdPosition.Top) { }
+
 		/// <summary>コンストラクタ リワード</summary>
-		public AdMobApi (string scene, EventHandler<Reward> OnAdRewarded) {
-			Debug.Log ($"AdMobApi {scene} {OnAdRewarded}");
+		public AdMobApi (string scene, Action<Reward> onAdRewarded) {
+			Debug.Log ($"AdMobApi {scene} {onAdRewarded}");
 			if (GetSceneAds (scene)?.Count > 0) {
-				throw new ArgumentException ($"Duplicate scene {scene}");
+				// 唯一のユニットでなければなりません
+				throw new ArgumentException ($"Duplicate set {scene}");
 			}
-			onAdRewarded = OnAdRewarded;
+			this.onAdRewarded = onAdRewarded;
 			type = AdType.Rewarded;
 			Scene = scene;
 			Create ();
@@ -213,64 +299,31 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>生成</summary>
 		/// <param name="keepBannerState">再生成時にバナーの表示を維持</param>
-		private void Create (bool keepBannerState = false) {
+		protected void Create (bool keepBannerState = false) {
 			if (!valid) { return; }
 			Remove (keepBannerState && type == AdType.Banner);
 			Debug.Log ($"Ad Create {Scene} {type}, keep={keepBannerState}, stat={state}, request={request}");
-#if (UNITY_ANDROID || UNITY_IOS)
-			if (type == AdType.Rewarded) {
-				if ((rewardedVideo = new RewardedAd (AdMobObj.AdUnitId [type])) != null) {
-					rewardedVideo.OnAdLoaded += HandleAdLoaded;
-					rewardedVideo.OnAdFailedToLoad += HandleAdFailedToLoad;
-					rewardedVideo.OnAdOpening += HandleAdOpened;
-					rewardedVideo.OnAdClosed += HandleAdClosed;
-					rewardedVideo.OnUserEarnedReward += HandleAdRewarded;
-					if (onAdRewarded != null) {
-						rewardedVideo.OnUserEarnedReward += onAdRewarded;
-					}
-				}
-			} else if (type == AdType.Interstitial) {
-				if ((interstitial = new InterstitialAd (AdMobObj.AdUnitId [type])) != null) {
-					interstitial.OnAdLoaded += HandleAdLoaded;
-					interstitial.OnAdFailedToLoad += HandleAdFailedToLoad;
-					interstitial.OnAdOpening += HandleAdOpened;
-					interstitial.OnAdClosed += HandleAdClosed;
-				}
-			} else if (type == AdType.Banner) {
-				if ((bannerView = new BannerView (AdMobObj.AdUnitId [AdType.Banner], adSize, adPosition)) != null) {
-					bannerView.OnAdLoaded += HandleAdLoaded;
-					bannerView.OnAdFailedToLoad += HandleAdFailedToLoad;
-					bannerView.OnAdOpening += HandleAdOpened;
-					bannerView.OnAdClosed += HandleAdClosed;
-				}
-			}
-#endif
 			Load ();
 		}
 
 		/// <summary>除去</summary>
 		/// <param name="keepShown">表示状態を要求として維持</param>
-		private void Remove (bool keepShown = false) {
+		protected void Remove (bool keepShown = false) {
 			if (!valid) { return; }
-			Debug.Log ($"Ad Remove {type} {keepShown}");
 #if (UNITY_ANDROID || UNITY_IOS)
 			if (bannerView != null) {
+				Debug.Log ($"Ad Remove {Scene} {Unit} {type} {keepShown}");
 				bannerView.Destroy ();
 				bannerView = null;
 			}
 			if (interstitial != null) {
+				Debug.Log ($"Ad Remove {Scene} {Unit} {type} {keepShown}");
 				interstitial.Destroy ();
 				interstitial = null;
 			}
 			if (rewardedVideo != null) {
-				rewardedVideo.OnAdLoaded -= HandleAdLoaded;
-				rewardedVideo.OnAdFailedToLoad -= HandleAdFailedToLoad;
-				rewardedVideo.OnAdOpening -= HandleAdOpened;
-				rewardedVideo.OnAdClosed -= HandleAdClosed;
-				rewardedVideo.OnUserEarnedReward -= HandleAdRewarded;
-				if (onAdRewarded != null) {
-					rewardedVideo.OnUserEarnedReward -= onAdRewarded;
-				}
+				Debug.Log ($"Ad Remove {Scene} {Unit} {type} {keepShown}");
+				rewardedVideo.Destroy ();
 				rewardedVideo = null;
 			}
 #endif
@@ -281,24 +334,55 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>読込</summary>
-		private void Load () {
+		protected void Load () {
 			if (!valid) { return; }
 			Debug.Log ($"Ad Load {Scene} {type}");
-#if (UNITY_ANDROID || UNITY_IOS)
-			if (rewardedVideo == null && interstitial == null && bannerView == null) {
-				throw new ArgumentNullException ("no ad instance");
-			}
-#endif
 			if (state != Status.LOADING && state != Status.LOADED) {
 #if (UNITY_ANDROID || UNITY_IOS)
-				AdRequest request = new AdRequest.Builder ().Build ();  // Create an empty ad request.
-				if (rewardedVideo != null) {
-					rewardedVideo.LoadAd (request);
-				} else if (interstitial != null) {
-					interstitial.LoadAd (request);
-				} else if (bannerView != null) {
-					bannerView.LoadAd (request);
-					bannerView.Hide ();
+				var adRequest = new AdRequest ();
+				if (type == AdType.Rewarded) {
+					if (rewardedVideo != null) {
+						rewardedVideo.Destroy ();
+						rewardedVideo = null;
+					}
+					RewardedAd.Load (AdMobObj.AdUnitId [type], adRequest, (RewardedAd ad, LoadAdError error) => {
+						rewardedVideo = ad;
+						if (ad == null || error != null) {
+							HandleAdFailedToLoad (error);
+						} else {
+							rewardedVideo.OnAdFullScreenContentOpened += HandleAdOpened;
+							rewardedVideo.OnAdFullScreenContentClosed += HandleAdClosed;
+							HandleAdLoaded (ad.GetResponseInfo ());
+						}
+					});
+				} else if (type == AdType.Interstitial) {
+					if (interstitial != null) {
+						interstitial.Destroy ();
+						interstitial = null;
+					}
+					InterstitialAd.Load (AdMobObj.AdUnitId [type], adRequest, (InterstitialAd ad, LoadAdError error) => {
+						interstitial = ad;
+						if (ad == null || error != null) {
+							HandleAdFailedToLoad (error);
+						} else {
+							interstitial.OnAdFullScreenContentOpened += HandleAdOpened;
+							interstitial.OnAdFullScreenContentClosed += HandleAdClosed;
+							HandleAdLoaded (ad.GetResponseInfo ());
+						}
+					});
+				} else if (type == AdType.Banner) {
+					if (bannerView == null) {
+						if ((bannerView = new BannerView (AdMobObj.AdUnitId [AdType.Banner], adSize, adPosition)) != null) {
+							bannerView.OnBannerAdLoaded += HandleAdLoaded;
+							bannerView.OnBannerAdLoadFailed += HandleAdFailedToLoad;
+							bannerView.OnAdClicked += HandleAdOpened;
+							bannerView.OnAdImpressionRecorded += HandleAdClosed;
+						}
+					}
+					if (bannerView != null) {
+						bannerView.LoadAd (adRequest);
+						bannerView.Hide ();
+					}
 				}
 #endif
 				state = Status.LOADING;
@@ -306,15 +390,15 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>表示</summary>
-		private void Show () {
-			if (!valid) { return; }
+		protected void Show () {
+			if (!valid && !IsLoaded) { return; }
 			Debug.Log ($"Ad Show {Scene} {type}");
 #if (UNITY_ANDROID || UNITY_IOS)
-			if (rewardedVideo != null && rewardedVideo.IsLoaded ()) {
-				rewardedVideo.Show ();
-			} else if (interstitial != null && interstitial.IsLoaded ()) {
+			if (rewardedVideo != null) {
+				rewardedVideo.Show ((Reward reward) => (onAdRewarded ?? HandleAdRewarded) (reward));
+			} else if (interstitial != null) {
 				interstitial.Show ();
-			} else if (bannerView != null && state == Status.LOADED) { // バナーには、IsLoadedがないため
+			} else if (bannerView != null) {
 				bannerView.Show ();
 				state = Status.SHOWN;  // バナーでは、HandleAdOpenedが呼ばれないため
 			}
@@ -323,7 +407,7 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>非表示</summary>
-		private void Hide () {
+		protected void Hide () {
 			if (!valid) { return; }
 			Debug.Log ($"Ad Hide {Scene} {type}");
 #if (UNITY_ANDROID || UNITY_IOS)
@@ -337,19 +421,25 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>破棄</summary>
 		public void Destroy () {
-			if (!valid) { return; }
 			Debug.Log ($"Ad Destroy {Scene} {type}");
-			Remove ();
-			adsList.Remove (this);
+			if (valid) {
+				Remove (false);
+			}
+			if (adsList.Contains (this)) {
+				adsList.Remove (this);
+			}
 			request = state = Status.DELETED;
 		}
 
-			#region event handler
+		#region event handler
 
 #if (UNITY_ANDROID || UNITY_IOS)
 		/// <summary>ロードされた Called when an ad request has successfully loaded.</summary>
-		private void HandleAdLoaded (object sender, EventArgs args) {
-			Debug.Log ($"Ad Loaded {Scene} {type} {sender} {args} {request} {valid}");
+		protected void HandleAdLoaded () => HandleAdLoaded (null);
+
+		/// <summary>ロードされた Called when an ad request has successfully loaded.</summary>
+		protected void HandleAdLoaded (ResponseInfo response) {
+			Debug.Log ($"Ad Loaded {Scene} {type} {response} {request} {valid}");
 			state = Status.LOADED;
 			if (request == Status.SHOWN) {
 				Show ();
@@ -359,48 +449,49 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>ロードに失敗した Called when an ad request failed to load.</summary>
-		private void HandleAdFailedToLoad (object sender, AdFailedToLoadEventArgs args) {
-			Debug.Log ($"Ad FailedToLoad {Scene} {type} {sender} {args} with message: {args.LoadAdError.GetMessage ()}");
+		protected void HandleAdFailedToLoad () => HandleAdFailedToLoad (null);
+
+		/// <summary>ロードに失敗した Called when an ad request failed to load.</summary>
+		protected void HandleAdFailedToLoad (LoadAdError error) {
+			Debug.Log ($"Ad FailedToLoad {Scene} {type} {error}");
 			Remove (true);
 		}
 
 		/// <summary>表示された(バナー以外) / クリックされた(バナー) Called when an ad is shown or clicked.</summary>
-		private void HandleAdOpened (object sender, EventArgs args) {
-			Debug.Log ($"Ad Opened {Scene} {type} {sender} {args}");
+		protected void HandleAdOpened () {
+			Debug.Log ($"Ad Opened {Scene} {type}");
 			if (type == AdType.Interstitial || type == AdType.Rewarded) {
 				state = Status.SHOWN;
 			}
 		}
 
 		/// <summary>閉じた Called when the ad is closed.</summary>
-		private void HandleAdClosed (object sender, EventArgs args) {
-			Debug.Log ($"Ad Closed {Scene} {type} {sender} {args}");
+		protected void HandleAdClosed () {
+			Debug.Log ($"Ad Closed {Scene} {type}");
 			if (type == AdType.Interstitial || type == AdType.Rewarded) {
 				request = state = Status.HIDDEN;
 #if UNITY_IOS
 				// エラー対応 (iOSのみの症状)
-                //   Failed to receive ad with error: Request Error: Will not send request because ad has been used.
+				//   Failed to receive ad with error: Request Error: Will not send request because ad has been used.
 				//   クローズしただけでは使用終了にならず、ロードしようとすると使用中でエラーするため、破棄と再生成を行う。
 				this.Create ();
 #endif
-				Load ();	// 次の先読み
+				Load ();    // 次の先読み
 			}
 		}
 
 		/// <summary>報酬を得た Called when the user should be rewarded for watching a video.</summary>
-		private void HandleAdRewarded (object sender, Reward args) {
+		protected void HandleAdRewarded (Reward args) {
 			string type = args.Type;
 			double amount = args.Amount;
-			Debug.Log ($"Ad Rewarded {Scene} {this.type} {sender} {args} for {amount.ToString ()} {type}");
+			Debug.Log ($"Ad Rewarded {Scene} {this.type} {args} for {amount.ToString ()} {type}");
 		}
 
 #endif
 
-			#endregion
-
+		#endregion
 
 	}
 
 }
-
 #endif

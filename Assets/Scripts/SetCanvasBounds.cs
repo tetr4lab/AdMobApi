@@ -29,7 +29,7 @@ public class SetCanvasBounds : MonoBehaviour {
 
 	private void Update () {
 		if (panel != null) {
-			Rect area = new Rect (Screen.safeArea);
+			var area = new Rect (Screen.safeArea);
 			if (area != lastSafeArea) {
 				var screenSize = new Vector2 (Screen.width, Screen.height);
 				panel.anchorMin = new Vector2 (HorizontalSafety ? area.position.x / screenSize.x : 0, VerticalSafety ? area.position.y / screenSize.y : 0);

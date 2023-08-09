@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
+using UnityEngine.UI;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 #endif
@@ -27,46 +29,47 @@ using GoogleMobileAds.Api;
 ///		AdMobコンソールでテストデバイスを登録しておく
 ///	使い方
 ///		オプトインを経て AdMobApi.Allow を有効にすることで、モジュールが初期化される
-///		AdMobApi.Init()を呼ぶ必要は無い、完了待ちは AdMobApi.Acceptable をチェックする
+///		明示的にAdMobApi.Initialize()を呼ぶ必要は無い(が呼んでも良い)、完了待ちは AdMobApi.Acceptable をチェックする
 ///		指定「シーン」の異なる広告は同時に表示されないように排他制御される
 ///		var instance = new AdMobApi (scene ...) で広告を作成
 ///		instance.ActiveSelf = active または SetActive (string scene) または SetActive (string scene, bool active) で表示を制御
 /// </summary>
 namespace GoogleMobileAds.Utility {
 
-	/// <summary>広告コンポーネント</summary>
+	/// <summary>広告制御コンポーネント</summary>
 	public class AdMobObj : MonoBehaviour {
 
-        #region static
+		#region static
 		// シングルトンインスタンス
-        private static AdMobObj instance;
+		private static AdMobObj instance;
 
 		// 広告ユニットIDの取得
 		public static AdUnitIDs AdUnitId => (instance?.adUnitId == null || instance.adUnitId.Count < 1) ? defaultAdUnitId : instance.adUnitId;
+
+#if UNITY_EDITOR
+		/// <summary>広告表示体の取得</summary>
+		public static RectTransform GetAdRectTransform (int index = -1, string name = null, float width = 0f, float height = 0f) => instance.FindAdObject (index, name, width, height)?.GetComponent<RectTransform> ();
+#endif
 
 		// テスト用の広告ユニットID
 		// ref: https://developers.google.com/admob/unity/test-ads
 		private static readonly AdUnitIDs defaultAdUnitId = new AdUnitIDs {
 #if UNITY_ANDROID
-			{ AdType.AppOpen,               "ca-app-pub-3940256099942544/3419835294" },
 			{ AdType.Banner,                "ca-app-pub-3940256099942544/6300978111" },
 			{ AdType.Interstitial,          "ca-app-pub-3940256099942544/1033173712" },
 			{ AdType.Rewarded,              "ca-app-pub-3940256099942544/5224354917" },
-			{ AdType.RewardedInterstitial,  "ca-app-pub-3940256099942544/5354046379" },
-			{ AdType.Native,                "ca-app-pub-3940256099942544/2247696110" },
 #elif UNITY_IOS
-			{ AdType.AppOpen,				"ca-app-pub-3940256099942544/5662855259" },
 			{ AdType.Banner,				"ca-app-pub-3940256099942544/2934735716" },
 			{ AdType.Interstitial,			"ca-app-pub-3940256099942544/4411468910" },
 			{ AdType.Rewarded,				"ca-app-pub-3940256099942544/1712485313" },
-			{ AdType.RewardedInterstitial,	"ca-app-pub-3940256099942544/6978759866" },
-			{ AdType.Native,				"ca-app-pub-3940256099942544/3986624511" },
 #endif
 		};
 		#endregion static
 
 		/// <summary>インスペクタで定義可能な広告ユニットID</summary>
-		[SerializeField] private AdUnitIDs adUnitId = default;
+		[FormerlySerializedAs ("adUnitId")]
+		[SerializeField]
+		private AdUnitIDs adUnitId = default;
 
 #if ALLOW_ADS
 		/// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
@@ -76,26 +79,71 @@ namespace GoogleMobileAds.Utility {
 		private bool isOnLine => (Application.internetReachability != NetworkReachability.NotReachable);
 		private bool lastOnline;
 
-		/// <summary>再入抑制用 (初期化完了として使うべからず)</summary>
-		private bool initialized;
+		/// <summary>再入抑制用</summary>
+		private bool isInitializing;
 
 		/// <summary>画面の向き</summary>
 		private DeviceOrientation lastDeviceOrientation;
 
-		// シングルトン初期化
-        private void Start () {
-            if (instance == null) {
-				instance = this;
-            }
-        }
+#if UNITY_EDITOR
+		/// <summary>広告の開始インデックス</summary>
+		private int baseIndex;
 
-        /// <summary>駆動</summary>
-        private async void Update () {
+		/// <summary>表示体を特定する</summary>
+		public GameObject FindAdObject (int index = -1, string name = null, float width = 0f, float height = 0f) {
+			var rootObjects = gameObject.scene.GetRootGameObjects ();
+			if (index >= 0) {
+				if (baseIndex + index < rootObjects.Length) {
+					return check (rootObjects [baseIndex + index]);
+				}
+			} else {
+				for (var i = baseIndex; i < rootObjects.Length; i++) {
+					var obj = check (rootObjects [i]);
+					if (obj) { return obj; }
+				}
+			}
+			return null;
+
+			GameObject check (GameObject obj) {
+				if ((name == null || obj.name.StartsWith (name))) {
+					Canvas canvas;
+					if ((canvas = obj.GetComponent<Canvas> ()) && canvas.sortingOrder == Int16.MaxValue) {
+						Image image;
+						if ((width <= 0f && height <= 0f) || (
+								(image = obj.GetComponentInChildren<Image> ())
+								&& (width <= 0f || image.rectTransform.sizeDelta.x == width)
+								&& (height <= 0f || image.rectTransform.sizeDelta.y == height)
+							)
+						) {
+							return obj;
+						}
+					}
+				}
+				return null;
+			}
+		}
+#endif
+
+		// シングルトン初期化
+		private void Start () {
+			if (instance == null) {
+				instance = this;
+			} else {
+				Destroy (this);
+			}
+		}
+
+		/// <summary>駆動</summary>
+		private async void Update () {
 			if (instance != this) { return; }
-			if (!initialized && AdMobApi.Allow) {
+			if (!isInitializing && AdMobApi.Allow) {
 				// 初期化
-				initialized = true;
-				await AdMobApi.Init ();
+				isInitializing = true;
+				await AdMobApi.Initialize (
+#if UNITY_EDITOR
+					status => baseIndex = gameObject.scene.rootCount
+#endif
+				);
 				lastOnline = isOnLine;
 				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line");
 			}
@@ -115,28 +163,29 @@ namespace GoogleMobileAds.Utility {
 					Debug.Log ($"Change {lastDeviceOrientation} => {Input.deviceOrientation}");
 					AdMobApi.ReMake (type: AdType.Banner, keepBannerState: true);
 					lastDeviceOrientation = Input.deviceOrientation;
-                }
+				}
 #if ((UNITY_ANDROID || UNITY_IOS) && UNITY_EDITOR)
 				// エディタ専用の駆動
 				AdMobApi.Update ();
 #endif
 			}
 		}
+
+		/// <summary>破棄</summary>
+		private void OnDestroy () {
+			AdMobApi.Destroy ();
+		}
+
 #endif
 
 	}
 
-#if ALLOW_ADS
-
 	/// <summary>広告タイプ</summary>
 	public enum AdType {
 		None = 0,
-		AppOpen,
 		Banner,
 		Interstitial,
 		Rewarded,
-		RewardedInterstitial,
-		Native,
 	}
 
 	// Dictionary<AdType,string> で済むものを、インスペクタから編集するための回避策
@@ -181,10 +230,9 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>コレクション初期化子を使用可能にするための空実装</summary>
-        public IEnumerator GetEnumerator () => throw new NotImplementedException ();
+		public IEnumerator GetEnumerator () => throw new NotImplementedException ();
 
-    }
+	}
 	#endregion AdUnitID
 
-#endif
 }
