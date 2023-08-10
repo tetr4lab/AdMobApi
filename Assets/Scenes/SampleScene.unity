@@ -2274,7 +2274,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   adUnitId:
-    list: []
+    list:
+    - platform: 11
+      type: 1
+      id: ca-app-pub-3940256099942544/6300978111
+    - platform: 11
+      type: 2
+      id: ca-app-pub-3940256099942544/1033173712
+    - platform: 11
+      type: 3
+      id: ca-app-pub-3940256099942544/5224354917
+    - platform: 8
+      type: 1
+      id: ca-app-pub-3940256099942544/2934735716
+    - platform: 8
+      type: 2
+      id: ca-app-pub-3940256099942544/4411468910
+    - platform: 8
+      type: 3
+      id: ca-app-pub-3940256099942544/1712485313
 --- !u!1 &2053265322
 GameObject:
   m_ObjectHideFlags: 0

@@ -44,32 +44,25 @@ namespace GoogleMobileAds.Utility {
 		private static AdMobObj instance;
 
 		// 広告ユニットIDの取得
-		public static AdUnitIDs AdUnitId => (instance?.adUnitId == null || instance.adUnitId.Count < 1) ? defaultAdUnitId : instance.adUnitId;
+		public static AdUnitIDs AdUnitId => (instance?.adUnitId == null || instance.adUnitId.Count < 1) ? new AdUnitIDs () : instance.adUnitId;
 
 #if UNITY_EDITOR
 		/// <summary>広告表示体の取得</summary>
 		public static RectTransform GetAdRectTransform (int index = -1, string name = null, float width = 0f, float height = 0f) => instance.FindAdObject (index, name, width, height)?.GetComponent<RectTransform> ();
 #endif
-
-		// テスト用の広告ユニットID
-		// ref: https://developers.google.com/admob/unity/test-ads
-		private static readonly AdUnitIDs defaultAdUnitId = new AdUnitIDs {
-#if UNITY_ANDROID
-			{ AdType.Banner,                "ca-app-pub-3940256099942544/6300978111" },
-			{ AdType.Interstitial,          "ca-app-pub-3940256099942544/1033173712" },
-			{ AdType.Rewarded,              "ca-app-pub-3940256099942544/5224354917" },
-#elif UNITY_IOS
-			{ AdType.Banner,				"ca-app-pub-3940256099942544/2934735716" },
-			{ AdType.Interstitial,			"ca-app-pub-3940256099942544/4411468910" },
-			{ AdType.Rewarded,				"ca-app-pub-3940256099942544/1712485313" },
-#endif
-		};
 		#endregion static
 
 		/// <summary>インスペクタで定義可能な広告ユニットID</summary>
 		[FormerlySerializedAs ("adUnitId")]
 		[SerializeField]
-		private AdUnitIDs adUnitId = default;
+		private AdUnitIDs adUnitId = new AdUnitIDs {
+			{ RuntimePlatform.Android,      AdType.Banner,       "ca-app-pub-3940256099942544/6300978111" },
+			{ RuntimePlatform.Android,      AdType.Interstitial, "ca-app-pub-3940256099942544/1033173712" },
+			{ RuntimePlatform.Android,      AdType.Rewarded,     "ca-app-pub-3940256099942544/5224354917" },
+			{ RuntimePlatform.IPhonePlayer, AdType.Banner,       "ca-app-pub-3940256099942544/2934735716" },
+			{ RuntimePlatform.IPhonePlayer, AdType.Interstitial, "ca-app-pub-3940256099942544/4411468910" },
+			{ RuntimePlatform.IPhonePlayer, AdType.Rewarded,     "ca-app-pub-3940256099942544/1712485313" },
+		};
 
 #if ALLOW_ADS
 		/// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
@@ -135,7 +128,9 @@ namespace GoogleMobileAds.Utility {
 			if (instance == null) {
 				instance = this;
 			} else {
+				Debug.LogError ($"singleton duplicated on {GetPath (transform)}", gameObject);
 				Destroy (this);
+				string GetPath (Transform node) => (node == null) ? "" : $"{GetPath (node.parent)}/{node.name}";
 			}
 		}
 
@@ -201,11 +196,15 @@ namespace GoogleMobileAds.Utility {
 		Rewarded,
 	}
 
-	// Dictionary<AdType,string> で済むものを、インスペクタから編集するための回避策
+	// インスペクタから編集するための方策
 	#region AdUnitID
 
 	/// <summary>広告ユニットID</summary>
-	[Serializable] public class AdUnitID {
+	[Serializable]
+	public class AdUnitID {
+
+		/// <summary>プラットフォーム</summary>
+		[SerializeField] public RuntimePlatform platform;
 
 		/// <summary>種類</summary>
 		[SerializeField] public AdType type;
@@ -214,7 +213,8 @@ namespace GoogleMobileAds.Utility {
 		[SerializeField] public string id;
 
 		/// <summary>コンストラクタ</summary>
-		public AdUnitID (AdType type, string id) {
+		public AdUnitID (RuntimePlatform platform, AdType type, string id) {
+			this.platform = platform;
 			this.type = type;
 			this.id = id;
 		}
@@ -224,7 +224,8 @@ namespace GoogleMobileAds.Utility {
 	/// <summary>
 	/// 広告ユニットID一覧
 	/// </summary>
-	[Serializable] public class AdUnitIDs : IEnumerable {
+	[Serializable]
+	public class AdUnitIDs : IEnumerable {
 
 		/// <summary>一覧</summary>
 		[SerializeField] private AdUnitID [] list;
@@ -232,13 +233,23 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>登録数</summary>
 		public int Count => list?.Length ?? 0;
 
+		/// <summary>現在のプラットフォーム</summary>
+#if UNITY_EDITOR
+#if UNITY_ANDROID
+		private const RuntimePlatform currentPlatform = RuntimePlatform.Android;
+#elif UNITY_IOS
+		private const RuntimePlatform currentPlatform =	RuntimePlatform.IPhonePlayer;
+#endif
+#else
+		private static readonly RuntimePlatform currentPlatform = Application.platform;
+#endif
 		/// <summary>種別からIDを得る</summary>
-		public string this [AdType type] => Array.Find (list, u => u.type == type).id;
+		public string this [AdType type] => list != null ? Array.Find (list, u => u.platform == currentPlatform && u.type == type)?.id : null;
 
 		/// <summary>一覧に追加</summary>
-		public void Add (AdType type, string id) {
+		public void Add (RuntimePlatform platform, AdType type, string id) {
 			var tempList = (list != null) ? new List<AdUnitID> (list) : new List<AdUnitID> { };
-			tempList.Add (new AdUnitID (type, id));
+			tempList.Add (new AdUnitID (platform, type, id));
 			list = tempList.ToArray ();
 		}
 
@@ -246,6 +257,7 @@ namespace GoogleMobileAds.Utility {
 		public IEnumerator GetEnumerator () => throw new NotImplementedException ();
 
 	}
+
 	#endregion AdUnitID
 
 }
