@@ -21,6 +21,7 @@ public class DodgeBanner : MonoBehaviour {
 	public void SetTarget (string set, int unit) {
 		adSet = set;
 		this.unit = unit;
+		targetAds = null;
 		updateSize ();
 	}
 
@@ -28,13 +29,14 @@ public class DodgeBanner : MonoBehaviour {
 	private bool inited = false;
 
 	/// <summary>対象のバナー広告</summary>
-	private AdMobApi targetAds => AdMobApi.GetSceneAds (adSet, unit);
+	private AdMobApi targetAds {
+		get => _targetAds ??= AdMobApi.GetSceneAds (adSet, unit);
+		set => _targetAds = value;
+	}
+	private AdMobApi _targetAds;
 
 	/// <summary>バナー状態</summary>
-	private bool state => AdMobApi.Allow && AdMobApi.GetActive (adSet);
-
-	/// <summary>直前のバナー状態</summary>
-	private bool lastState;
+	private bool isActive => AdMobApi.Allow && AdMobApi.GetActive (adSet);
 
 	/// <summary>初期サイズ</summary>
 	private Vector2 initialSize;
@@ -44,7 +46,6 @@ public class DodgeBanner : MonoBehaviour {
 
 	/// <summary>初期化</summary>
 	private IEnumerator Start () {
-		lastState = false;
 		rect = transform as RectTransform;
 		initialSize = rect.sizeDelta;
 		yield return new WaitUntil (() => targetAds != null); // バナーの初期化を待つ
@@ -58,18 +59,15 @@ public class DodgeBanner : MonoBehaviour {
 	/// <summary>サイズ調整</summary>
 	private void updateSize () {
 		var size = initialSize;
-		if (lastState = state) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
-			var lastSize = size;
-			size.y -= targetAds.bannerSize.y / rect.lossyScale.y;
-			//Debug.Log ($"bannerSize {targetAds.bannerSize} / {rect.lossyScale.y}, {lastSize} => {size}, {rect.sizeDelta}");
+		if (isActive) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
+			size.y -= targetAds.BannerPixelSize.y / rect.lossyScale.y;
 		}
 		rect.sizeDelta = size;
 	}
 
 	/// <summary>駆動</summary>
 	private void Update () {
-		if (inited && lastState != state) {
-			//Debug.Log ($"DodgeBanner {lastState} => {state}");
+		if (inited && targetAds.Dirty) {
 			updateSize (); // 遅延して状態が変化した場合に応じる
 		}
 	}

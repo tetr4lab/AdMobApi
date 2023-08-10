@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,20 +8,26 @@ using GoogleMobileAds.Utility;
 #endif
 
 /// <summary>
-/// ƒTƒ“ƒvƒ‹ƒƒCƒ“
+/// ã‚µãƒ³ãƒ—ãƒ«ãƒ¡ã‚¤ãƒ³
 /// </summary>
 public class SwitchPanel : MonoBehaviour {
 
-	/// <summary>—İÏŠl“¾”•\¦‘Ì</summary>
+	/// <summary>ç´¯ç©ç²å¾—æ•°è¡¨ç¤ºä½“</summary>
 	[SerializeField] private Text CoinsText = default;
 
-	/// <summary>î•ñ•\¦‘Ì</summary>
+	/// <summary>æƒ…å ±è¡¨ç¤ºä½“</summary>
 	[SerializeField] private Text InfoPanel = default;
 
-	/// <summary>ƒoƒi[‚ğ”ğ‚¯‚éƒpƒlƒ‹</summary>
+	/// <summary>ãƒãƒŠãƒ¼ã‚’é¿ã‘ã‚‹ãƒ‘ãƒãƒ«</summary>
 	[SerializeField] private DodgeBanner dodgeBannerPanel = default;
 
-	// LƒV[ƒ“
+	/// <summary>ã‚»ãƒƒãƒˆç•ªå·è¡¨ç¤ºä½“</summary>
+	[SerializeField] private Text SetNumberDisplay = default;
+
+	/// <summary>ãƒãƒŠãƒ¼ãƒœã‚¿ãƒ³ãƒ©ãƒ™ãƒ«</summary>
+	[SerializeField] private Text BannerButtonLavel = default;
+
+	// åºƒå‘Šã‚·ãƒ¼ãƒ³
 	public static readonly string AdSetBanner0 = "banner0";
 	public static readonly string AdSetBanner1 = "banner1";
 	public static readonly string AdSetBanner2 = "banner2";
@@ -31,14 +37,15 @@ public class SwitchPanel : MonoBehaviour {
 	public static readonly string [] AdSetBanners = new [] { AdSetBanner0, AdSetBanner1, AdSetBanner2, AdSetBanner3, };
 
 #if ALLOW_ADS
-	/// <summary>—İÏŠl“¾”</summary>
+	/// <summary>ç´¯ç©ç²å¾—æ•°</summary>
 	private int coins = 0;
+	private int lastCoins;
 
-	/// <summary>‰Šú‰»</summary>
-	private async void Start () {
+	/// <summary>åˆæœŸåŒ–</summary>
+	private IEnumerator Start () {
 		AdMobApi.Allow = true;
-		await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
-		Debug.Log ("App Inited");
+		yield return new WaitUntil (() => AdMobApi.Acceptable);
+		Debug.Log ("App Init");
 		new AdMobApi (AdSetBanner0, true);
 		new AdMobApi (AdSetBanner0, AdSize.IABBanner, AdPosition.Center);
 		new AdMobApi (AdSetBanner1, AdSize.MediumRectangle, AdPosition.Bottom);
@@ -47,15 +54,14 @@ public class SwitchPanel : MonoBehaviour {
 		new AdMobApi (AdSetBanner2, AdSize.IABBanner, AdPosition.Center);
 		new AdMobApi (AdSetBanner3, new AdSize (320, 100), AdPosition.Bottom);
 		new AdMobApi (AdSetBanner3, AdSize.IABBanner, AdPosition.Center);
-		ChangeBanners ();
+		dodgeBannerPanel.SetTarget (AdSetBanner0, 0);
 		AdMobApi.SetActive (AdSetBanner0);
 		new AdMobApi (AdSetInterstitial);
 		new AdMobApi (AdSetRewarded, OnAdRewarded);
-
-		// AdId‚Ìæ“¾
+		// AdIdã®å–å¾—
 		string adid = null;
 		if (Application.platform == RuntimePlatform.Android) {
-			// Application.RequestAdvertisingIdentifierAsync()‚ªAndroid”ñ‘Î‰‚É‚È‚Á‚½‚Ì‚Å
+			// Application.RequestAdvertisingIdentifierAsync()ãŒAndroidéå¯¾å¿œã«ãªã£ãŸã®ã§
 			try {
 				using (var player = new AndroidJavaClass ("com.unity3d.player.UnityPlayer"))
 				using (var currentActivity = player.GetStatic<AndroidJavaObject> ("currentActivity"))
@@ -77,46 +83,46 @@ public class SwitchPanel : MonoBehaviour {
 			}
 		}
 		InfoPanel.text = (adid == null) ? "No AdId" : $"AdId: {adid}";
+		Debug.Log ("App Inited");
 	}
 
-	/// <summary>Œ»İ‚Ìƒoƒi[</summary>
-	private string AdSetBanner => AdSetBanners [_bannerSet];
-
-	/// <summary>ƒoƒi[Ø‚è‘Ö‚¦</summary>
-	private void ChangeBanners (bool swap = false) {
-		var current = AdMobApi.GetActive (AdSetBanner);
-		AdMobApi.SetActive (AdSetBanner, false);
-		if (swap) {
-			_bannerSet = (_bannerSet + 1) % AdSetBanners.Length;
+	/// <summary>é§†å‹•</summary>
+	private void Update () {
+		if (lastCoins != coins) {
+			CoinsText.text = coins.ToString ();
+			lastCoins = coins;
 		}
-		Debug.Log ($"CreateBanners {AdSetBanner}");
-		dodgeBannerPanel.SetTarget (AdSetBanner, 0);
-		AdMobApi.SetActive (AdSetBanner, current);
 	}
-	private int _bannerSet;
 
-	/// <summary>Šl“¾ƒR[ƒ‹ƒoƒbƒN</summary>
+	/// <summary>ç¾åœ¨ã®ãƒãƒŠãƒ¼</summary>
+	private string adSetBanner => AdSetBanners [currentBannerSet];
+
+	/// <summary>ç¾åœ¨ã®ãƒãƒŠãƒ¼</summary>
+	private int currentBannerSet;
+
+	/// <summary>ç²å¾—æ™‚ã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯</summary>
 	private void OnAdRewarded (Reward reward) {
 		Debug.Log ($"Got {(int) reward.Amount} reward{((reward.Amount > 1)? "s" : "")}");
 		coins += (int) reward.Amount;
-		CoinsText.text = coins.ToString ();
 	}
 #endif
 
-	/// <summary>ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½</summary>
+	/// <summary>ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸ</summary>
 	public void OnPushButton (Button button) {
 #if ALLOW_ADS
+		var current = AdMobApi.GetActive (adSetBanner);
 		switch (button.name) {
 			case "BannerButton":
-				var current = AdMobApi.GetActive (AdSetBanner);
-				Debug.Log ($"{button.name} {AdSetBanner} {current} => {!current}");
-				AdMobApi.SetActive (AdSetBanner, !current);
+				Debug.Log ($"{button.name} {adSetBanner} {current} => {!current}");
+				AdMobApi.SetActive (adSetBanner, !current);
 				break;
 			case "SwapButton":
-				ChangeBanners (true);
-				Debug.Log ($"{button.name} {AdSetBanner}");
-				var text = button.GetComponentInChildren<Text> ();
-				if (text) { text.text = _bannerSet.ToString (); }
+				AdMobApi.SetActive (adSetBanner, false);
+				currentBannerSet = (currentBannerSet + 1) % AdSetBanners.Length;
+				dodgeBannerPanel.SetTarget (adSetBanner, 0);
+				AdMobApi.SetActive (adSetBanner, current);
+				Debug.Log ($"{button.name} {adSetBanner}");
+				if (SetNumberDisplay) { SetNumberDisplay.text = currentBannerSet.ToString (); }
 				break;
 			case "InterstitialButton":
 				Debug.Log ($"{button.name}");
@@ -127,6 +133,7 @@ public class SwitchPanel : MonoBehaviour {
 				AdMobApi.SetActive (AdSetRewarded);
 				break;
 		}
+		if (BannerButtonLavel) { BannerButtonLavel.text = $"{(AdMobApi.GetActive (adSetBanner) ? "â˜‘" : "â˜")} Banner"; }
 #endif
 	}
 

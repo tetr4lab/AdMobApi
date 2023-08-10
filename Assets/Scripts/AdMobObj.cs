@@ -73,17 +73,23 @@ namespace GoogleMobileAds.Utility {
 
 #if ALLOW_ADS
 		/// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
-		private const int RemakeDelayTime = 500;
+		private const int OnlineDelayTime = 500;
+
+		/// <summary>画面サイズ変化時の再構築開始までの遅延時間(ms)</summary>
+		private const int ChangeScreenDelayTime = 200;
 
 		/// <summary>オンライン判定 (実際の使用可能性は判定しない)</summary>
 		private bool isOnLine => (Application.internetReachability != NetworkReachability.NotReachable);
 		private bool lastOnline;
 
-		/// <summary>再入抑制用</summary>
+		/// <summary>初期化時の再入抑止用</summary>
 		private bool isInitializing;
 
-		/// <summary>画面の向き</summary>
-		private DeviceOrientation lastDeviceOrientation;
+		/// <summary>駆動時の再入抑止用</summary>
+		private bool isExclusionControling;
+
+		/// <summary>画面のサイズ</summary>
+		private Vector2Int lastScreenSize;
 
 #if UNITY_EDITOR
 		/// <summary>広告の開始インデックス</summary>
@@ -139,35 +145,42 @@ namespace GoogleMobileAds.Utility {
 			if (!isInitializing && AdMobApi.Allow) {
 				// 初期化
 				isInitializing = true;
-				await AdMobApi.Initialize (
+				AdMobApi.Initialize ();
+				// 初期化待ち
+				await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
 #if UNITY_EDITOR
-					status => baseIndex = gameObject.scene.rootCount
+				baseIndex = gameObject.scene.rootCount;
 #endif
-				);
+				// デリゲートにも書けなくはないが、接続検査はメインスレッドで実行する必要がある
 				lastOnline = isOnLine;
-				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line");
+				lastScreenSize = new Vector2Int (Screen.width, Screen.height);
+				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line, Screen{lastScreenSize}");
 			}
-			if (AdMobApi.Acceptable) {
+			if (AdMobApi.Acceptable && !isExclusionControling) {
+				isExclusionControling = true;
 				// 新しい接続を検出
 				if (lastOnline != isOnLine) {
 					Debug.Log ($"Change {(lastOnline ? "On => Off" : "Off => On")}Line");
-					if (lastOnline = isOnLine) {
-						await TaskEx.DelayWhile (() => isOnLine, RemakeDelayTime); // 時間までオンラインが継続するなら
-						if (isOnLine) {
-							AdMobApi.ReMake (keepBannerState: true);
+					await TaskEx.DelayWhile (() => lastOnline != isOnLine, OnlineDelayTime);
+					if (lastOnline != isOnLine) {
+						// 規定時間まで状況が継続した
+						if (lastOnline = isOnLine) {
+							AdMobApi.ReMake ();
 						}
 					}
 				}
-				// 画面の向きが変化したらバナーを再生成
-				if (lastDeviceOrientation != Input.deviceOrientation) {
-					Debug.Log ($"Change {lastDeviceOrientation} => {Input.deviceOrientation}");
-					AdMobApi.ReMake (type: AdType.Banner, keepBannerState: true);
-					lastDeviceOrientation = Input.deviceOrientation;
+				// 画面のサイズが変化したらバナーを再生成
+				var newScreenSize = new Vector2Int (Screen.width, Screen.height);
+				if (lastScreenSize != newScreenSize) {
+					Debug.Log ($"Change Screen{lastScreenSize} => {newScreenSize}");
+					await TaskEx.DelayWhile (() => newScreenSize.x == Screen.width && newScreenSize.y == Screen.height, ChangeScreenDelayTime);
+					if (newScreenSize.x == Screen.width && newScreenSize.y == Screen.height) {
+						// 規定時間まで状況が継続した
+						lastScreenSize = newScreenSize;
+						AdMobApi.ReMake (type: AdType.Banner);
+					}
 				}
-#if ((UNITY_ANDROID || UNITY_IOS) && UNITY_EDITOR)
-				// エディタ専用の駆動
-				AdMobApi.Update ();
-#endif
+				isExclusionControling = false;
 			}
 		}
 
