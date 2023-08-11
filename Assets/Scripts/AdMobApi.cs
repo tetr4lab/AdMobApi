@@ -58,6 +58,9 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>指定シーンの広告一覧を得る</summary>
 		public static List<AdMobApi> GetSceneAds (string scene) => adsList?.FindAll (ad => ad.Scene == scene) ?? new List<AdMobApi> { };
 
+		/// <summary>指定シーンの最後のユニット番号+1 ユニットがなければ0</summary>
+		public static int GetNextUnitNumber (string scene) => adsList.FindLast (ad => ad.Scene == scene)?.Unit + 1 ?? 0;
+
 		/// <summary>指定のシーンと番号の広告を得る</summary>
 		public static AdMobApi GetSceneAds (string scene, int unit) => adsList?.Find (ad => ad.Scene == scene && ad.Unit == unit);
 
@@ -268,11 +271,7 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>表示制御 (要求レベル)</summary>
 		public bool ActiveSelf {
-			get => Valid && ShowRequested && (
-				(Type == AdType.Rewarded && rewardedVideo != null)
-				|| (Type == AdType.Interstitial && interstitial != null)
-				|| (Type == AdType.Banner && bannerView != null)
-			);
+			get => Valid && ShowRequested && ((Type == AdType.Rewarded && rewardedVideo != null) || (Type == AdType.Interstitial && interstitial != null) || (Type == AdType.Banner && bannerView != null));
 			set { if (Valid) { if (value) { Show (); } else { Hide (); } } }
 		}
 
@@ -281,21 +280,26 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>コンストラクタ インタースティシャル</summary>
 		public AdMobApi (string scene) {
+			Type = AdType.Interstitial;
+			Scene = scene;
+			Unit = GetNextUnitNumber (scene);
 			Debug.Log ($"AdMobApi ({scene}:{Unit})");
-			if (GetSceneAds (scene)?.Count > 0) {
+			if (Unit > 0) {
 				// 唯一のユニットでなければなりません
 				throw new ArgumentException ($"Duplicate set {scene}");
 			}
-			Type = AdType.Interstitial;
-			Scene = scene;
 			Load ();
 			adsList.Add (this);
 		}
 
 		/// <summary>コンストラクタ バナー</summary>
 		public AdMobApi (string scene, AdSize size, AdPosition pos) {
-			var ads = GetSceneAds (scene);
-			Debug.Log ($"AdMobApi ({scene}:{ads.Count}, ({size.Width}, {size.Height}), {pos}) {size.AdType}");
+			Type = AdType.Banner;
+			Scene = scene;
+			Unit = GetNextUnitNumber (scene);
+			bannerSize = size;
+			bannerPosition = pos;
+			Debug.Log ($"AdMobApi ({scene}:{Unit}, ({size.Width}, {size.Height}), {pos}) {size.AdType}");
 			foreach (var ad in adsList) {
 				if (ad.Scene == scene) {
 					// 表示の重複
@@ -304,7 +308,7 @@ namespace GoogleMobileAds.Utility {
 						throw new ArgumentException ($"Duplicate set {scene} {ad.Type} != {AdType.Banner}");
 					} else if (ad.bannerPosition == pos) {
 						// 既にバナーがある位置です
-						throw new ArgumentException ($"Duplicate position {scene} {pos} {ads.Count} != {ad.Unit}");
+						throw new ArgumentException ($"Duplicate position {scene} {pos} {Unit} != {ad.Unit}");
 					}
 				}
 				if (ad.bannerSize == size && ad.bannerPosition != pos) {
@@ -312,11 +316,6 @@ namespace GoogleMobileAds.Utility {
 					throw new ArgumentException ($"Duplicate unit {scene} ({size.Width}, {size.Height}) {pos} != {ad.bannerPosition}");
 				}
 			}
-			bannerSize = size;
-			bannerPosition = pos;
-			Type = AdType.Banner;
-			Scene = scene;
-			Unit = ads.Count;
 			Load ();
 			adsList.Add (this);
 		}
@@ -326,14 +325,15 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>コンストラクタ リワード</summary>
 		public AdMobApi (string scene, Action<Reward> onAdRewarded) {
+			Type = AdType.Rewarded;
+			Scene = scene;
+			Unit = GetNextUnitNumber (scene);
+			this.onAdRewarded = onAdRewarded;
 			Debug.Log ($"AdMobApi ({scene}:{Unit}, {onAdRewarded})");
-			if (GetSceneAds (scene)?.Count > 0) {
+			if (Unit > 0) {
 				// 唯一のユニットでなければなりません
 				throw new ArgumentException ($"Duplicate set {scene}");
 			}
-			this.onAdRewarded = onAdRewarded;
-			Type = AdType.Rewarded;
-			Scene = scene;
 			Load ();
 			adsList.Add (this);
 		}

@@ -8,14 +8,16 @@ tags: Unity AdMob Android iOS C#
 - Apple App Store、Google Play Store
 - この記事では、Google Mobile Adsの一部機能を限定的に使用し、汎用性のない部分があります。
 - この記事では、以下の内容を扱いません。
+  - 各ストアのルールやコンソールの使い方など
   - Google Mobile Adsのルールやコンソールの使い方など
   - Unityエディタの使い方やモバイル向けのビルド方法など
 - この記事のソースは、実機でテストしていますが、本番広告でのテストはしていません。
+  - テストは限定的で、デバイスやシチュエーションなどを網羅していません。
   - プロジェクトで使用したIDはテスト用のもので、ストアで公開する製品に使用できるものではありません。
 
 ## できること
 - AndroidまたはiOSで、AdMobを利用します。
-- 複数のバナー、インタースティシャル、リワードビデオ広告の表示を制御し、シーンに応じて広告を切り替えます。
+- 複数のバナー、インタースティシャル、リワードビデオ広告の表示を制御し、状況に応じて広告を切り替えます。
 - 報酬の獲得を検出します。
 
 ## リソース
@@ -29,12 +31,12 @@ tags: Unity AdMob Android iOS C#
 #### プラグインの導入方法
 - 上記の「リリース」からGoogle Mobile Ads Unity Plugin のパッケージ(`.unitypackage`)をダウンロードします。
 - `Assets` >  `Import Package` > `Custom Package...` でパッケージを導入します。
+- `Assets` > `External Dependency Manager` > `XXXXX Resolver` > `Resolve` を実施します。
 - `Assets` > `Google Mobile Ads` > `Settings...` で、AppIDを設定します。
   - 以下のAppIDが、テスト用にGoogleから提供されています。
     - Android: `ca-app-pub-3940256099942544~3347511713`
     - iOS:     `ca-app-pub-3940256099942544~1458002511`
   - 必要に応じて、AdMobのコンソールで本番IDを取得してください。
-- `Asset` > `External Dependency Manager` > `XXXXX Resolver` > `Resolve` を実施します。
 
 ## サンプルプロジェクトの使い方
 ### 導入
@@ -50,7 +52,7 @@ tags: Unity AdMob Android iOS C#
   - 報酬は累積表示されます。
 - バナー、インタースティシャル、リワードの各広告の表示は相互に排他的です。
 
-### 構成
+### ファイル構成
 - 汎用
   - `AdMobObj.cs`
     - 広告を制御するコンポーネント(物理広告クラス)です。
@@ -71,15 +73,19 @@ tags: Unity AdMob Android iOS C#
 ## 自分のプロジェクトでの使い方
 
 ### 概念
-- 「ユニット」
-  - このプロジェクトでは、「AdMobの広告ユニット」の他に、`AdMobApi`クラスとそのインスタンスの意味でも「ユニット」を使用します。
-- 「セット」
-  - 名前が付けられた広告ユニットのグループです。
-    - 名前の文字列でセットを特定します。
-    - 状況に応じてセットを切り替えて使用します。
-  - 同時に表示可能な広告ユニットだけがセットに所属でき、セット同士は排他的に使用されます。
-    - インタースティシャルやリワードは全画面表示なので、必ず単一ユニットのセットになります。
-    - 同じサイズのバナーは、所属する全てのセットで、同じ位置に配置されなければなりません。
+- 《ユニット》
+  - 論理広告クラス(`AdMobApi`)のインスタンスです。
+  - 《シーン》と、シーン毎に0から始まる「ユニット番号」で特定されます。
+  - 「AdMobの広告ユニット」は「広告ユニット」と表記します。
+- 《シーン》
+  - 文字列の名前を持った《ユニット》のグループです。
+    - 名前で特定されます。
+    - 所属する《ユニット》には、《シーン》内でユニークな「ユニット番号」が与えられます。
+  - 同時に表示可能な《ユニット》だけが同一《シーン》に所属でき、個々の《シーン》は排他的に使用されます。
+    - インタースティシャルやリワードは全画面表示なので、同一《シーン》に所属できる《ユニット》はひとつだけになります。
+    - プラグイン側の制約で、同一サイズのバナーは、所属する全ての《シーン》で、同じ位置に配置されなければなりません。
+      - 例えば、ある《シーン》で`AdSize.Banner`のバナーが`AdPosition.Bottom`に配置された場合は、他の全ての《シーン》でも`AdPosition.Bottom`に配置されなければなりません。
+  - 「Unityの`Scene Asset`」は、単に「シーン」と表記します。
 
 ### 導入
 #### プロジェクト
@@ -87,10 +93,11 @@ tags: Unity AdMob Android iOS C#
   - 未導入だと次のステップでエラーが生じます。
 - プロジェクトに、`AdMobObj.cs`と`AdMobApi.cs`を導入します。
   - シーンの適当なオブジェクトに`AdMobObj.cs`をアタッチします。
+    - `Donot Destroy`で使用する場合は、ルートオブジェクトにアタッチしてください。
 - 必要に応じて、AdMobコンソールで広告ユニットのIDを生成します。
   - 生成したIDを、インスペクタを使用してシーンの`AdMobObj`コンポーネントに設定します。
-  - 広告ユニット生成の際には、テストデバイスを登録することをお勧めします。
-    - テストデバイスでは、本番用のID(アプリおよびユニット)を使用してもテスト広告が表示され、安全にテストが可能です。
+  - 生成した広告ユニットを使用する際には、テストデバイスを登録することをお勧めします。
+    - テストデバイスでは、本番用のIDを使用してもテスト広告が表示され、安全にテストが可能です。
 
 #### ネームスペース
 以下のネームスペースを使用します。
@@ -106,43 +113,47 @@ using GoogleMobileAds.Utility;
 - `GoogleMobileAds.Api.AdPosition`
   - Googleにより、バナーの位置(主に、上、中央、下)が定義されています。
 
+### 初期化
+- `AdMobApi.Allow`を真にするまで初期化は実行されません。
+    - 通常は、オプトイン後に初期化を行います。
+- 初期化の完了は`AdMobApi.Acceptable`でチェックできます。
+
 ### 生成
-- クラス`AdMobApi`のインスタンスが、広告ユニットのインスタンスです。
-- インスタンスが生成されてから表示可能になるまでにはラグがあるので、あらかじめを準備しておく必要があります。
-- 生成時にセット名を与え、以降は、その名前で特定します。
+- 《ユニット》の生成時に《シーン》の名前を与え、以降は、その名前で特定します。
+  - 通常は、生成した`AdMobApi`インスタンスを保持する必要はありません。
+  - バナーは、同一の《シーン》に複数の《ユニット》を割り当てることができます。
+- 《ユニット》の制御は《シーン》単位で行います。
+- 《ユニット》が生成されてから表示可能になるまでにはラグがあるので、あらかじめを生成しておく必要があります。
 
 ```csharp
-  new AdMobApi ("banner", AdSize.SmartBanner, AdPosition.Bottom);
+  new AdMobApi ("banner", true);
   new AdMobApi ("banner", AdSize.MediumRectangle, AdPosition.Center);
   new AdMobApi ("interstitial");
-  new AdMobApi ("rewarded", OnAdRewarded);
+  new AdMobApi ("rewarded", reward => coins += (int) reward.Amount);
 ```
 
 #### バナー
+- `new AdMobApi (string scene, bool bottom);`で、名前、下端(!上端)を与えて、アンカーアダプティブバナーを生成します。
 - `new AdMobApi (string scene, AdSize size, AdPosition pos)`で、名前、サイズ、位置を与えて生成します。
 
 #### インタースティシャル
 - `new AdMobApi (string scene)`で、名前を与えて生成します。
 
 #### リワード
-- `new AdMobApi (string scene, EventHandler<Reward> OnAdRewarded)`で、名前と報酬獲得時の処理を与えて生成します。
+- `new AdMobApi (string scene, Action<Reward> OnAdRewarded)`で、名前と報酬獲得時の処理を与えて生成します。
 
-### 破棄
-- 二度と使用しないインスタンスは、メソッド`Destroy ()`で破棄できます。
-- 通常は、破棄と生成を繰り返さず、表示を切り替えて使い回しますので、使用する必要はありません。
-
-### 表示
-- `AdMobApi.GetActive (string scene)`で状態を得て、`AdMobApi.SetActive (string scene, bool active = true)`で制御します。
-  - この方法では、セット間で排他的に制御されます。
-- プロパティ`ActiveSelf`で、ユニット個別に制御することも可能ですが、この方法では排他制御されません。
+### 表示の制御
+- `AdMobApi.GetActive (string scene)`で状態を取得できます。
+- `AdMobApi.SetActive (string scene, bool active = true)`で状態を制御できます。
+  - 《シーン》間で排他的に制御されます。
 
 ```csharp
-  // バナー表示をスイッチ
+  // バナーをOn/Off
   AdMobApi.SetActive ("banner", !AdMobApi.GetActive ("banner"));
 ```
 
-### 報酬
-- インスタンスの生成時に登録したコールバック先で報酬を得ます。
+### 報酬の取得
+- 《ユニット》の生成時に登録したコールバック先で報酬を得ます。
 - コールバック先は例えば以下のようなものになります。
 
 ```csharp
@@ -153,7 +164,12 @@ using GoogleMobileAds.Utility;
   }
 ```
 
-- なお、一度の視聴で得られる報酬の量(`reward.Amount`)は、AdMobnoコンソールで定義するユニットのパラメータの一つです。
+- なお、一度の視聴で得られる報酬の量(`reward.Amount`)は、AdMobコンソールで定義する広告ユニットのパラメータの一つです。
+
+### 破棄
+- 再利用しない《ユニット》は、`instance.Destroy ()`で破棄できます。
+- 再利用しない《シーン》は、`AdMobApi.Destroy (string scene)`で破棄できます。
+- 通常は、破棄と生成を繰り返さず、表示を制御して使い回します。
 
 ## おわりに
 

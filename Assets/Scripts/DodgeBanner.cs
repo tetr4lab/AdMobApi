@@ -67,7 +67,7 @@ public class DodgeBanner : MonoBehaviour {
 
 	/// <summary>駆動</summary>
 	private void Update () {
-		if (inited && targetAds.Dirty) {
+		if (inited && targetAds?.Dirty == true) {
 			updateSize (); // 遅延して状態が変化した場合に応じる
 		}
 	}

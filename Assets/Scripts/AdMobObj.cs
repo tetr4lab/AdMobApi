@@ -31,13 +31,20 @@ using GoogleMobileAds.Api;
 ///		このスクリプトを適当なシーンオブジェクトにアタッチする (シーン全体で一つだけ)
 ///			UnitIDを設定する
 ///				設定しなければテストユニットになる
+///			複数のシーンで共有する場合は、ルートオブジェクトにアタッチして、インスペクタで Donot Destroy にチェックする
 ///	概念
 ///		ユニット
 ///			論理広告(AdMobApi)クラスのインスタンス
-///			「シーン」と「インデックス(ユニット番号)」で特定する
+///			「シーン」と「ユニット番号」で特定する
+///		ユニット番号
+///			シーン毎に0から開始
+///				どのシーンも最初に生成したユニットの番号は0
+///			ユニットを破棄しても、シーンが存在する限り使い回されない
+///				追加生成した場合は、シーンで最大のユニット番号+1が割り当てられる
+///				シーンのユニットが全て破棄されると再度0から割り当てられる
 ///		シーン
 ///			ユニットのグループを表す文字列 (Unity の Scene Asset とは無関係)
-///			所属するユニットには、「シーン」内でユニークな「インデックス(ユニット番号)」が与えられる
+///			所属するユニットには、「シーン」内でユニークな「ユニット番号」が与えられる
 ///	使い方
 ///		概要
 ///			オプトインを経て AdMobApi.Allow を有効にすることで、モジュールが初期化される
@@ -49,14 +56,16 @@ using GoogleMobileAds.Api;
 ///			var instance = new AdMobApi (string scene); // インタースティシャル
 ///			var instance = new AdMobApi (string scene, Action<Reward> onAdRewarded); // リワード
 ///		ユニットの取得
-///			List<AdMobApi> ads = AdMobApi.GetSceneAds (string scene); // 指定シーンの全ユニット
-///			AdMobApi ad = AdMobApi.GetSceneAds (string scene, int unit); // 指定の単一ユニット
+///			List<AdMobApi> instances = AdMobApi.GetSceneAds (string scene); // 指定シーンの全ユニット
+///			AdMobApi instance = AdMobApi.GetSceneAds (string scene, int unit); // 指定の単一ユニット
 ///		表示の制御
-///			instance.ActiveSelf = (bool) active; // ユニット
-///			AdMobApi.SetActive (string scene, bool active); // シーン
+///			AdMobApi.SetActive (string scene, bool active); // シーン (排他制御あり)
 ///			AdMobApi.SetActive (); // 全シーン
 ///			bool activity = AdMobApi.GetActive (string scene); // シーン
+///			instance.ActiveSelf = (bool) active; // ユニット (排他制御なし)
+///			bool activity = instance.ActiveSelf; // ユニット
 ///		ユニットの破棄
+///			instance.Destroy (); // ユニット
 ///			AdMobApi.Destroy (string scene); // 指定シーンの全ユニット
 ///			AdMobApi.Destroy (); // 全シーンの全ユニット
 /// </summary>
@@ -72,14 +81,13 @@ namespace GoogleMobileAds.Utility {
 		// 広告ユニットIDの取得
 		public static AdUnitIDs AdUnitId => (instance?.adUnitId == null || instance.adUnitId.Count < 1) ? new AdUnitIDs () : instance.adUnitId;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && ALLOW_ADS
 		/// <summary>広告表示体の取得</summary>
 		public static RectTransform GetAdRectTransform (int index = -1, string name = null, float width = 0f, float height = 0f) => instance.FindAdObject (index, name, width, height)?.GetComponent<RectTransform> ();
 #endif
 		#endregion static
 
 		/// <summary>インスペクタで定義可能な広告ユニットID</summary>
-		[FormerlySerializedAs ("adUnitId")]
 		[SerializeField]
 		private AdUnitIDs adUnitId = new AdUnitIDs {
 			{ RuntimePlatform.Android,      AdType.Banner,       "ca-app-pub-3940256099942544/6300978111" },
@@ -89,6 +97,10 @@ namespace GoogleMobileAds.Utility {
 			{ RuntimePlatform.IPhonePlayer, AdType.Interstitial, "ca-app-pub-3940256099942544/4411468910" },
 			{ RuntimePlatform.IPhonePlayer, AdType.Rewarded,     "ca-app-pub-3940256099942544/1712485313" },
 		};
+
+		/// <summary>複数シーンで共有 (使用の際はルートオブジェクトにアタッチのこと)</summary>
+		[SerializeField]
+		private bool donotDestroy = false;
 
 #if ALLOW_ADS
 		/// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
@@ -153,6 +165,9 @@ namespace GoogleMobileAds.Utility {
 		private void Start () {
 			if (instance == null) {
 				instance = this;
+				if (donotDestroy) {
+					DontDestroyOnLoad (gameObject);
+				}
 			} else {
 				Debug.LogError ($"singleton duplicated on {GetPath (transform)}", gameObject);
 				Destroy (this);
