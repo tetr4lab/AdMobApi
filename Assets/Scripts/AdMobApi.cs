@@ -511,12 +511,6 @@ namespace GoogleMobileAds.Utility {
 				Dirty = true;
 				State = Status.NONE;
 				ShowRequested = false;
-#if UNITY_IOS
-				// エラー対応 (iOSのみの症状)
-				//   Failed to receive ad with error: Request Error: Will not send request because ad has been used.
-				//   クローズしただけでは使用終了にならず、ロードしようとすると使用中でエラーするため、破棄と再生成を行う。
-				this.Create ();
-#endif
 				Load ();    // 次の先読み
 			}
 		}
