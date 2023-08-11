@@ -16,23 +16,49 @@ using GoogleMobileAds.Api;
 /// 互換性
 ///		バナー、インタースティシャル、リワードビデオに対応
 /// 準備
+///		AdMobコンソール
+///			広告ID(AppID, UnitID)を作成する
+///			テストデバイスを登録する
+///				登録に必要なデバイス側IDは、同梱のサンプルアプリでも表示可能
+///	導入
 ///		プロジェクトにGoogle Mobile Ads Unityパッケージ を導入する
+///			ref: https://github.com/googleads/googleads-mobile-unity/releases
+///		Assets > External Dependency Manager > XXXXX Resolver > Resolve を実施する
 ///		Assets > Google Mobile Ads > Settings... でAppIDを設定する
 ///			テスト用AppID
 ///			Android: ca-app-pub-3940256099942544~3347511713
 ///			iOS:     ca-app-pub-3940256099942544~1458002511
-///		Asset > External Dependency Manager > XXXXX Resolver > Resolve を実施する
-///		このスクリプトを適当なシーンオブジェクトにアタッチする
-///			複数アタッチしても最初に起動した一つだけが有効になる
-///		AdMobコンソールで作った広告ID(AppID, UnitID)を設定する
-///			設定しなければテストユニットになる
-///		AdMobコンソールでテストデバイスを登録しておく
+///		このスクリプトを適当なシーンオブジェクトにアタッチする (シーン全体で一つだけ)
+///			UnitIDを設定する
+///				設定しなければテストユニットになる
+///	概念
+///		ユニット
+///			論理広告(AdMobApi)クラスのインスタンス
+///			「シーン」と「インデックス(ユニット番号)」で特定する
+///		シーン
+///			ユニットのグループを表す文字列 (Unity の Scene Asset とは無関係)
+///			所属するユニットには、「シーン」内でユニークな「インデックス(ユニット番号)」が与えられる
 ///	使い方
-///		オプトインを経て AdMobApi.Allow を有効にすることで、モジュールが初期化される
-///		明示的にAdMobApi.Initialize()を呼ぶ必要は無い(が呼んでも良い)、完了待ちは AdMobApi.Acceptable をチェックする
-///		指定「シーン」の異なる広告は同時に表示されないように排他制御される
-///		var instance = new AdMobApi (scene ...) で広告を作成
-///		instance.ActiveSelf = active または SetActive (string scene) または SetActive (string scene, bool active) で表示を制御
+///		概要
+///			オプトインを経て AdMobApi.Allow を有効にすることで、モジュールが初期化される
+///			明示的にAdMobApi.Initialize()を呼ぶ必要は無い(が呼んでも良い)、完了待ちは AdMobApi.Acceptable をチェックする
+///			指定「シーン」の異なる広告は同時に表示されないように排他制御される
+///		広告の作成
+///			var instance = new AdMobApi (string scene, bool bottom); // アンカーアダプティブバナー
+///			var instance = new AdMobApi (string scene, AdSize size, AdPosition pos); // バナー
+///			var instance = new AdMobApi (string scene); // インタースティシャル
+///			var instance = new AdMobApi (string scene, Action<Reward> onAdRewarded); // リワード
+///		ユニットの取得
+///			List<AdMobApi> ads = AdMobApi.GetSceneAds (string scene); // 指定シーンの全ユニット
+///			AdMobApi ad = AdMobApi.GetSceneAds (string scene, int unit); // 指定の単一ユニット
+///		表示の制御
+///			instance.ActiveSelf = (bool) active; // ユニット
+///			AdMobApi.SetActive (string scene, bool active); // シーン
+///			AdMobApi.SetActive (); // 全シーン
+///			bool activity = AdMobApi.GetActive (string scene); // シーン
+///		ユニットの破棄
+///			AdMobApi.Destroy (string scene); // 指定シーンの全ユニット
+///			AdMobApi.Destroy (); // 全シーンの全ユニット
 /// </summary>
 namespace GoogleMobileAds.Utility {
 
@@ -181,6 +207,7 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>破棄</summary>
 		private void OnDestroy () {
+			if (instance != this) { return; }
 			AdMobApi.Destroy ();
 		}
 
