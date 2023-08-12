@@ -276,12 +276,10 @@ namespace GoogleMobileAds.Utility {
 		public int Count => list?.Length ?? 0;
 
 		/// <summary>現在のプラットフォーム</summary>
-#if UNITY_EDITOR
-#if UNITY_ANDROID
+#if UNITY_EDITOR && UNITY_ANDROID
 		private const RuntimePlatform currentPlatform = RuntimePlatform.Android;
-#elif UNITY_IOS
+#elif UNITY_EDITOR && UNITY_IOS
 		private const RuntimePlatform currentPlatform =	RuntimePlatform.IPhonePlayer;
-#endif
 #else
 		private static readonly RuntimePlatform currentPlatform = Application.platform;
 #endif
