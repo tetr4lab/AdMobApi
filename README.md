@@ -41,7 +41,11 @@ tags: Unity AdMob Android iOS C#
 ## サンプルプロジェクトの使い方
 ### 導入
 - このサンプルプロジェクトは、Google Mobile Ads Unity Pluginを含まないため、リポジトリをクローンしてエディタで開こうとするとエラーします。
-- エラーを無視して開き、[プラグインを導入](#プラグインの導入方法)してください。
+- エラーを無視して開きプラグインを導入します。
+    - プロジェクトが開いたら、`Edit` > `Project Settings...` > `Player` > `Other Settings` > `Scripting Define Symbols` で、`ALLOW_ADS`を`_ALLOW_ADS`にして`Apply`ボタンを押してください。
+      - これで、エラーが消えて警告が残ります。
+    - エラーのなくなった状態で、[プラグインを導入](#プラグインの導入方法)して、AppIDの設定まで終えてください。
+    - プラグインの導入が完了したら、シンボル`ALLOW_ADS`を戻して、忘れずに`Apply`ボタンを押してください。
 
 ### 機能
 - 実行すると、テストバナーを表示します。
@@ -90,7 +94,6 @@ tags: Unity AdMob Android iOS C#
 ### 導入
 #### プロジェクト
 - プロジェクトに、[Google Mobile Ads Unity Plugin のパッケージを導入](#プラグインの導入方法)します。
-  - 未導入だと次のステップでエラーが生じます。
 - プロジェクトに、`AdMobObj.cs`と`AdMobApi.cs`を導入します。
   - シーンの適当なオブジェクトに`AdMobObj.cs`をアタッチします。
     - `Donot Destroy`で使用する場合は、ルートオブジェクトにアタッチしてください。
@@ -98,6 +101,7 @@ tags: Unity AdMob Android iOS C#
   - 生成したIDを、インスペクタを使用してシーンの`AdMobObj`コンポーネントに設定します。
   - 生成した広告ユニットを使用する際には、テストデバイスを登録することをお勧めします。
     - テストデバイスでは、本番用のIDを使用してもテスト広告が表示され、安全にテストが可能です。
+- シンボル`ALLOW_ADS`を定義して、広告を使用するコードを有効にしてください。
 
 #### ネームスペース
 以下のネームスペースを使用します。
@@ -106,6 +110,10 @@ tags: Unity AdMob Android iOS C#
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Utility;
 ```
+#### シンボル
+
+- `ALLOW_ADS`
+  - シンボルが定義されている場合のみ広告を使用するコードが有効になります。
 
 #### 列挙型
 - `GoogleMobileAds.Api.AdSize`
