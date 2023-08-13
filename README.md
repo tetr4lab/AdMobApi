@@ -20,6 +20,10 @@ tags: Unity AdMob Android iOS C#
 - 複数のバナー、インタースティシャル、リワードビデオ広告の表示を制御し、状況に応じて広告を切り替えます。
 - 報酬の獲得を検出します。
 
+### 制限事項
+- `Project Settings` > `Player` > `Resolution Scaling` > `Resolution Scaling Mode` が`Fixed DPI`だと、バナーのサイズを正しく取得できない可能性が高いです。
+    - `Disabled`での使用を推奨します。
+
 ## リソース
 ### このプロジェクト
 - [ソース (GitHub)](https://github.com/tetr4lab/AdMobApi)
