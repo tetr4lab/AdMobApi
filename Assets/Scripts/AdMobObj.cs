@@ -123,18 +123,15 @@ namespace GoogleMobileAds.Utility {
 		private Vector2Int lastScreenSize;
 
 #if UNITY_EDITOR
-		/// <summary>広告の開始インデックス</summary>
-		private int baseIndex;
-
 		/// <summary>表示体を特定する</summary>
 		public GameObject FindAdObject (int index = -1, string name = null, float width = 0f, float height = 0f) {
 			var rootObjects = gameObject.scene.GetRootGameObjects ();
 			if (index >= 0) {
-				if (baseIndex + index < rootObjects.Length) {
-					return check (rootObjects [baseIndex + index]);
+				if (index < rootObjects.Length) {
+					return check (rootObjects [index]);
 				}
 			} else {
-				for (var i = baseIndex; i < rootObjects.Length; i++) {
+				for (var i = 0; i < rootObjects.Length; i++) {
 					var obj = check (rootObjects [i]);
 					if (obj) { return obj; }
 				}
@@ -184,9 +181,6 @@ namespace GoogleMobileAds.Utility {
 				AdMobApi.Initialize ();
 				// 初期化待ち
 				await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
-#if UNITY_EDITOR
-				baseIndex = gameObject.scene.rootCount;
-#endif
 				// デリゲートにも書けなくはないが、接続検査はメインスレッドで実行する必要がある
 				lastOnline = isOnLine;
 				lastScreenSize = new Vector2Int (Screen.width, Screen.height);
