@@ -52,7 +52,6 @@ public class DodgeBanner : MonoBehaviour {
 		if (targetAds.Type != AdType.Banner) {
 			throw new System.ArgumentOutOfRangeException ($"'{adSet}' is not Banner.");
 		}
-		updateSize ();
 		inited = true;
 	}
 
