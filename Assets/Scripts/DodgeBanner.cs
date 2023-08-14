@@ -12,8 +12,12 @@ public class DodgeBanner : MonoBehaviour {
 
 	/// <summary>対象のセット</summary>
 	[SerializeField] private string adSet = default;
+
 	/// <summary>対象のユニット番号(生成順) (通常は0)</summary>
 	[SerializeField] private int unit = default;
+
+	/// <summary>避け始める変位量 (超えるまで避けず、越えた分だけ避ける)</summary>
+	[SerializeField] private float threshold = 0f;
 
 #if (UNITY_ANDROID || UNITY_IPHONE) && ALLOW_ADS
 
@@ -59,7 +63,11 @@ public class DodgeBanner : MonoBehaviour {
 	private void updateSize () {
 		var size = initialSize;
 		if (isActive) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
-			size.y -= targetAds.BannerPixelSize.y / rect.lossyScale.y;
+			var height = targetAds.BannerPixelSize.y / rect.lossyScale.y - threshold;
+			Debug.Log ($"DodgeBanner {name} {height} {targetAds.BannerPixelSize.y} / {rect.lossyScale.y} - {threshold}");
+			if (height > 0f) {
+				size.y -= height;
+			}
 		}
 		rect.sizeDelta = size;
 	}
