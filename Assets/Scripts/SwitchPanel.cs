@@ -132,6 +132,10 @@ public class SwitchPanel : MonoBehaviour {
 				Debug.Log ($"{button.name}");
 				AdMobApi.SetActive (AdSetRewarded);
 				break;
+			case "InfoPanel":
+				Debug.Log ($"{button.name} {InfoPanel.text}");
+				GUIUtility.systemCopyBuffer = InfoPanel.text;
+				break;
 		}
 		if (BannerButtonLavel) { BannerButtonLavel.text = $"{(AdMobApi.GetActive (adSetBanner) ? "☑" : "☐")} Banner"; }
 #endif
