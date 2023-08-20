@@ -50,7 +50,7 @@ namespace GoogleMobileAds.Utility {
 		public static bool Acceptable;
 
 		/// <summary>生成された広告一覧</summary>
-		protected static List<AdMobApi> adsList;
+		protected static List<AdMobApi> adsList = new List<AdMobApi> ();
 
 		/// <summary>再入抑制用</summary>
 		protected static bool isInitializing;
@@ -59,7 +59,7 @@ namespace GoogleMobileAds.Utility {
 		public static List<AdMobApi> GetSceneAds (string scene) => adsList?.FindAll (ad => ad.Scene == scene) ?? new List<AdMobApi> { };
 
 		/// <summary>指定シーンの最後のユニット番号+1 ユニットがなければ0</summary>
-		public static int GetNextUnitNumber (string scene) => adsList.FindLast (ad => ad.Scene == scene)?.Unit + 1 ?? 0;
+		public static int GetNextUnitNumber (string scene) => adsList?.FindLast (ad => ad.Scene == scene)?.Unit + 1 ?? 0;
 
 		/// <summary>指定のシーンと番号の広告を得る</summary>
 		public static AdMobApi GetSceneAds (string scene, int unit) => adsList?.Find (ad => ad.Scene == scene && ad.Unit == unit);
@@ -85,7 +85,6 @@ namespace GoogleMobileAds.Utility {
 			if (Allow && !isInitializing) {
 				Debug.Log ("AdMobApi Init");
 				isInitializing = true;
-				adsList = new List<AdMobApi> { };
 				MobileAds.Initialize (status => {
 					Acceptable = true;
 					if (onCompleted != null) {
@@ -186,16 +185,28 @@ namespace GoogleMobileAds.Utility {
 		}
 		protected bool _request;
 
-		/// <summary>更新あり (読み出すと消える)</summary>
+		/// <summary>更新あり (最初に読み出したフレーム後に消える)</summary>
 		public bool Dirty {
 			get {
-				var lastDirty = _dirty;
-				_dirty = false;
-				return lastDirty;
+				//Debug.Log ($"[{Time.frameCount}] {_dirty}{(_firstGetedFrameCount < Time.frameCount ? " => False" : "")} {_firstGetedFrameCount}{(_firstGetedFrameCount > Time.frameCount ? $" => {Time.frameCount}" : "")}");
+				if (_firstGetedFrameCount > Time.frameCount) {
+					// 未読
+					_firstGetedFrameCount = Time.frameCount;
+				} else if (_firstGetedFrameCount < Time.frameCount) {
+					// 過去に既読
+					_dirty = false;
+				}
+				return _dirty;
 			}
-			set => _dirty = value;
+			set {
+				//Debug.Log ($"[{Time.frameCount}] {_dirty} => {value}");
+				_dirty = value;
+				// 未読にする
+				_firstGetedFrameCount = int.MaxValue;
+			}
 		}
 		protected bool _dirty;
+		protected int _firstGetedFrameCount = int.MaxValue;
 
 		/// <summary>バナー広告</summary>
 		protected BannerView bannerView;
