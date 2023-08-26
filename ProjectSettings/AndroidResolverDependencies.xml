@@ -1,6 +1,6 @@
 <dependencies>
   <packages>
-    <package>com.google.android.gms:play-services-ads:22.2.0</package>
+    <package>com.google.android.gms:play-services-ads:22.3.0</package>
     <package>com.google.android.ump:user-messaging-platform:2.1.0</package>
   </packages>
   <files>
@@ -42,10 +42,10 @@
     <file>Assets/Plugins/Android/androidx.versionedparcelable.versionedparcelable-1.1.1.aar</file>
     <file>Assets/Plugins/Android/androidx.viewpager.viewpager-1.0.0.aar</file>
     <file>Assets/Plugins/Android/androidx.work.work-runtime-2.7.0.aar</file>
-    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-22.2.0.aar</file>
-    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-base-22.2.0.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-22.3.0.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-base-22.3.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-identifier-18.0.0.aar</file>
-    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-lite-22.2.0.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-lite-22.3.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-appset-16.0.1.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-base-18.0.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-basement-18.0.0.aar</file>
