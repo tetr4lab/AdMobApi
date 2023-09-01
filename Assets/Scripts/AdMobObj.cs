@@ -9,6 +9,7 @@ using UnityEngine.UI;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 #endif
+using Tetr4lab;
 
 /// <summary>
 /// AdMobを使うためのラッパー

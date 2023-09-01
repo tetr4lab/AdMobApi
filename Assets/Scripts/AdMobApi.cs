@@ -432,7 +432,7 @@ namespace GoogleMobileAds.Utility {
 					if (rewardedVideo == null) {
 						Load ();
 					} else if (IsLoaded) {
-						rewardedVideo.Show ((Reward reward) => (onAdRewarded ?? HandleAdRewarded) (reward));
+						rewardedVideo.Show (onAdRewarded ?? HandleAdRewarded);
 					}
 					break;
 				case AdType.Interstitial:

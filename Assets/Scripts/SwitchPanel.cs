@@ -102,7 +102,7 @@ public class SwitchPanel : MonoBehaviour {
 
 	/// <summary>獲得時コールバック</summary>
 	private void OnAdRewarded (Reward reward) {
-		Debug.Log ($"Got {(int) reward.Amount} reward{((reward.Amount > 1)? "s" : "")}");
+		Debug.Log ($"Got {(int) reward.Amount} {reward.Type}{(reward.Amount > 1 ? "s" : "")}");
 		coins += (int) reward.Amount;
 	}
 #endif
