@@ -62,7 +62,7 @@ public class DodgeBanner : MonoBehaviour {
 	/// <summary>サイズ調整</summary>
 	private void updateSize () {
 		var size = initialSize;
-		if (isActive) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
+		if (isActive && targetAds != null) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
 			var height = targetAds.BannerPixelSize.y / rect.lossyScale.y - threshold;
 			Debug.Log ($"DodgeBanner {name} {height} {targetAds.BannerPixelSize.y} / {rect.lossyScale.y} - {threshold}");
 			if (height > 0f) {
