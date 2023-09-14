@@ -47,7 +47,10 @@ namespace GoogleMobileAds.Utility {
 		protected static bool _allow;
 
 		/// <summary>初期化完了</summary>
-		public static bool Acceptable;
+		public static bool Acceptable { get; protected set; }
+
+		/// <summary>ロードで失敗した</summary>
+		public static bool FailedToLoad { get; protected set; }
 
 		/// <summary>生成された広告一覧</summary>
 		protected static List<AdMobApi> adsList = new List<AdMobApi> ();
@@ -134,10 +137,27 @@ namespace GoogleMobileAds.Utility {
 					if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
 						var request = ad.ShowRequested;
 						ad.Load (true);
-						ad.ActiveSelf = request;
+						if (ad.Type == AdType.Banner) { ad.ActiveSelf = request; } // バナーの表示状態を復元
 					}
 				}
 				Debug.Log ($"Ad ReMaked {scene}:{adsList.Count} {type} {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a._dirty} {a.ShowRequested}"))}}}");
+			}
+		}
+
+		/// <summary>再ロード</summary>
+		public static void ReLoad () {
+			if (Allow && Acceptable) {
+				foreach (var ad in adsList) {
+					if (ad.State == Status.NONE) {
+						// 未ロードで放置されていると思われる対象
+						var request = ad.ShowRequested;
+						ad.Load ();
+						if (ad.Type == AdType.Banner) { ad.ActiveSelf = request; } // バナーの表示状態を復元
+						Debug.Log ($"Ad ReLoad {ad.Scene}:{ad.Unit} {ad.Type} {ad.State} {ad._dirty} {ad.ShowRequested}");
+					}
+				}
+				FailedToLoad = false;
+				Debug.Log ($"Ad ReLoad {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a.State} {a._dirty} {a.ShowRequested}"))}}}");
 			}
 		}
 
@@ -287,7 +307,8 @@ namespace GoogleMobileAds.Utility {
 		}
 
 		/// <summary>ロード済み</summary>
-		public bool IsLoaded => Valid && (State == Status.LOADED || State == Status.SHOWN || State == Status.HIDDEN);
+		public bool IsLoaded => Valid && (State == Status.LOADED || State == Status.SHOWN || State == Status.HIDDEN)
+			&& (interstitial?.CanShowAd () == true || rewardedVideo?.CanShowAd () == true || bannerView != null);
 
 		/// <summary>コンストラクタ インタースティシャル</summary>
 		public AdMobApi (string scene) {
@@ -480,6 +501,7 @@ namespace GoogleMobileAds.Utility {
 				adsList.Remove (this);
 			}
 			ShowRequested = false;
+			State = Status.DELETED;
 		}
 
 		#region event handler
@@ -502,8 +524,9 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>ロードに失敗した Called when an ad request failed to load.</summary>
 		protected void HandleAdFailedToLoad (LoadAdError error) {
-			Debug.Log ($"Ad FailedToLoad {Scene}:{Unit} {Type} {error}");
 			Remove (false);
+			Debug.Log ($"Ad Failed To Load {Scene}:{Unit} {Type} {State} {_dirty} {ShowRequested} {error?.GetMessage ()}");
+			FailedToLoad = true;
 		}
 
 		/// <summary>表示された(バナー以外) / クリックされた(バナー) Called when an ad is shown or clicked.</summary>

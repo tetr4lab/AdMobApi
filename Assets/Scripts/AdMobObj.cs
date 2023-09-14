@@ -189,6 +189,7 @@ namespace GoogleMobileAds.Utility {
 			}
 			if (AdMobApi.Acceptable && !isExclusionControling) {
 				isExclusionControling = true;
+				var remaking = false;
 				// 新しい接続を検出
 				if (lastOnline != isOnLine) {
 					Debug.Log ($"Change {(lastOnline ? "On => Off" : "Off => On")}Line");
@@ -197,6 +198,7 @@ namespace GoogleMobileAds.Utility {
 						// 規定時間まで状況が継続した
 						if (lastOnline = isOnLine) {
 							AdMobApi.ReMake ();
+							remaking = true;
 						}
 					}
 				}
@@ -209,7 +211,12 @@ namespace GoogleMobileAds.Utility {
 						// 規定時間まで状況が継続した
 						lastScreenSize = newScreenSize;
 						AdMobApi.ReMake (type: AdType.Banner);
+						remaking = true;
 					}
+				}
+				// 失敗したロードのリトライ
+				if (!remaking && AdMobApi.FailedToLoad && isOnLine) {
+					AdMobApi.ReLoad ();
 				}
 				isExclusionControling = false;
 			}
