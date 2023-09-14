@@ -57,6 +57,13 @@ public class DodgeBanner : MonoBehaviour {
 			throw new System.ArgumentOutOfRangeException ($"'{adSet}' is not Banner.");
 		}
 		inited = true;
+		if (isActive) {
+			// 先んじてバナーが表示されていた場合はここで初期化が必要
+			updateSize ();
+			// 空読み
+			_ = targetAds?.Dirty;
+		}
+		//Debug.Log ($"DodgeBanner.Start {name} {(inited ? "inited" : "init error")} {targetAds.Scene}:{targetAds.Unit} {(isActive ? "active" : "inactive")}");
 	}
 
 	/// <summary>サイズ調整</summary>
@@ -64,7 +71,7 @@ public class DodgeBanner : MonoBehaviour {
 		var size = initialSize;
 		if (isActive && targetAds != null) { // 回線接続がないとサイズが取得できないので、都度取得することが望ましい
 			var height = targetAds.BannerPixelSize.y / rect.lossyScale.y - threshold;
-			Debug.Log ($"DodgeBanner {name} {height} {targetAds.BannerPixelSize.y} / {rect.lossyScale.y} - {threshold}");
+			//Debug.Log ($"DodgeBanner {name} {height} {targetAds.BannerPixelSize.y} / {rect.lossyScale.y} - {threshold}");
 			if (height > 0f) {
 				size.y -= height;
 			}
@@ -75,7 +82,8 @@ public class DodgeBanner : MonoBehaviour {
 	/// <summary>駆動</summary>
 	private void Update () {
 		if (inited && targetAds?.Dirty == true) {
-			updateSize (); // 遅延して状態が変化した場合に応じる
+			// 遅延して状態が変化した場合に応じる
+			updateSize ();
 		}
 	}
 
