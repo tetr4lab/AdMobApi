@@ -14,7 +14,7 @@ namespace GoogleMobileAds.Utility {
 	public class AdMobApi {
 
 		/// <summary>状態/要求</summary>
-		protected enum Status {
+		public enum Status {
 			/// <summary>初期状態</summary>
 			NONE = 0,
 			/// <summary>読み込み中</summary>
@@ -136,8 +136,14 @@ namespace GoogleMobileAds.Utility {
 				foreach (var ad in adsList) {
 					if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
 						var request = ad.ShowRequested;
-						ad.Load (true);
-						if (ad.Type == AdType.Banner) { ad.ActiveSelf = request; } // バナーの表示状態を復元
+						if (ad.Type == AdType.Banner || !ad.IsLoaded) {
+							// バナーはロード済みでも再ロード
+							ad.Load (true);
+						}
+						if (ad.Type == AdType.Banner) {
+							// バナーの表示状態を復元
+							ad.ActiveSelf = request;
+						}
 					}
 				}
 				Debug.Log ($"Ad ReMaked {scene}:{adsList.Count} {type} {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a._dirty} {a.ShowRequested}"))}}}");
@@ -148,11 +154,14 @@ namespace GoogleMobileAds.Utility {
 		public static void ReLoad () {
 			if (Allow && Acceptable) {
 				foreach (var ad in adsList) {
-					if (ad.State == Status.NONE) {
-						// 未ロードで放置されていると思われる対象
+					if (ad.State == Status.NONE && !ad.IsLoaded) {
+						// ロードに失敗したと思われる対象
 						var request = ad.ShowRequested;
-						ad.Load ();
-						if (ad.Type == AdType.Banner) { ad.ActiveSelf = request; } // バナーの表示状態を復元
+						ad.Load (true);
+						if (ad.Type == AdType.Banner) {
+							// バナーの表示状態を復元
+							ad.ActiveSelf = request;
+						}
 						Debug.Log ($"Ad ReLoad {ad.Scene}:{ad.Unit} {ad.Type} {ad.State} {ad._dirty} {ad.ShowRequested}");
 					}
 				}
@@ -186,9 +195,9 @@ namespace GoogleMobileAds.Utility {
 		public AdType Type { get; protected set; }
 
 		/// <summary>状態</summary>
-		protected Status State {
+		public Status State {
 			get => _state;
-			set {
+			protected set {
 				//Debug.Log ($"Ad State {Scene}:{Unit} {_state} => {value}");
 				_state = value;
 			}

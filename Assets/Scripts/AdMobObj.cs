@@ -76,6 +76,9 @@ namespace GoogleMobileAds.Utility {
 	public class AdMobObj : MonoBehaviour {
 
 		#region static
+		/// <summary>ロード失敗後のフレーム数の閾値</summary>
+		private const int LoadFailureThreshold = 1;
+
 		// シングルトンインスタンス
 		private static AdMobObj instance;
 
@@ -122,6 +125,9 @@ namespace GoogleMobileAds.Utility {
 
 		/// <summary>画面のサイズ</summary>
 		private Vector2Int lastScreenSize;
+
+		/// <summary>失敗後のフレーム数</summary>
+		private int loadFailureFrames = -1;
 
 #if UNITY_EDITOR
 		/// <summary>表示体を特定する</summary>
@@ -216,7 +222,11 @@ namespace GoogleMobileAds.Utility {
 				}
 				// 失敗したロードのリトライ
 				if (!remaking && AdMobApi.FailedToLoad && isOnLine) {
-					AdMobApi.ReLoad ();
+					loadFailureFrames = (loadFailureFrames < 0) ? 0 : loadFailureFrames + 1;
+					if (loadFailureFrames >= LoadFailureThreshold) {
+						AdMobApi.ReLoad ();
+						loadFailureFrames = -1;
+					}
 				}
 				isExclusionControling = false;
 			}

@@ -27,6 +27,9 @@ public class SwitchPanel : MonoBehaviour {
 	/// <summary>バナーボタンラベル</summary>
 	[SerializeField] private Text BannerButtonLavel = default;
 
+	/// <summary>デバッグ情報表示体</summary>
+	[SerializeField] private Text DebugInfoPanel = default;
+
 	// 広告シーン
 	public static readonly string AdSetBanner0 = "banner0";
 	public static readonly string AdSetBanner1 = "banner1";
@@ -92,6 +95,46 @@ public class SwitchPanel : MonoBehaviour {
 			CoinsText.text = coins.ToString ();
 			lastCoins = coins;
 		}
+		if (DebugInfoPanel) {
+			var isOnline = Application.internetReachability != NetworkReachability.NotReachable;
+			var ads = new [] {
+				AdMobApi.GetSceneAds (AdSetRewarded, 0),
+				AdMobApi.GetSceneAds (AdSetInterstitial, 0),
+				AdMobApi.GetSceneAds (AdSetBanner0, 0),
+				AdMobApi.GetSceneAds (AdSetBanner0, 1),
+				AdMobApi.GetSceneAds (AdSetBanner1, 0),
+				AdMobApi.GetSceneAds (AdSetBanner1, 1),
+				AdMobApi.GetSceneAds (AdSetBanner2, 0),
+				AdMobApi.GetSceneAds (AdSetBanner2, 1),
+				AdMobApi.GetSceneAds (AdSetBanner3, 0),
+				AdMobApi.GetSceneAds (AdSetBanner3, 1),
+			};
+			var isLoaded =
+				(ads [0] == null || ads [0].IsLoaded) && 
+				(ads [1] == null || ads [1].IsLoaded) && 
+				(ads [2] == null || ads [2].IsLoaded) && 
+				(ads [3] == null || ads [3].IsLoaded) && 
+				(ads [4] == null || ads [4].IsLoaded) && 
+				(ads [5] == null || ads [5].IsLoaded) && 
+				(ads [6] == null || ads [6].IsLoaded) && 
+				(ads [7] == null || ads [7].IsLoaded) && 
+				(ads [8] == null || ads [8].IsLoaded) &&
+				(ads [9] == null || ads [9].IsLoaded);
+			DebugInfoPanel.text = !AdMobApi.Acceptable ? "" : string.Join ("\n", new string [] {
+				$"<size=40>{(isOnline && isLoaded == false ? "<color=red>対応中</color>" : "<color=green>待機中</color>")}</size>",
+				$"{(isOnline ? "<color=green>ONLINE</color>" : "<color=red>OFFLINE</color>")} {(AdMobApi.FailedToLoad ? "<color=red>FailedToLoad</color>" : "")}",
+				ads [0] == null ? "" : $"{ads [0].Scene}:{ads [0].Unit} {ads [0].State} {(ads [0].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [1] == null ? "" : $"{ads [1].Scene}:{ads [1].Unit} {ads [1].State} {(ads [1].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [2] == null ? "" : $"{ads [2].Scene}:{ads [2].Unit} {ads [2].State} {(ads [2].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [3] == null ? "" : $"{ads [3].Scene}:{ads [3].Unit} {ads [3].State} {(ads [3].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [4] == null ? "" : $"{ads [4].Scene}:{ads [4].Unit} {ads [4].State} {(ads [4].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [5] == null ? "" : $"{ads [5].Scene}:{ads [5].Unit} {ads [5].State} {(ads [5].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [6] == null ? "" : $"{ads [6].Scene}:{ads [6].Unit} {ads [6].State} {(ads [6].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [7] == null ? "" : $"{ads [7].Scene}:{ads [7].Unit} {ads [7].State} {(ads [7].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [8] == null ? "" : $"{ads [8].Scene}:{ads [8].Unit} {ads [8].State} {(ads [8].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+				ads [9] == null ? "" : $"{ads [9].Scene}:{ads [9].Unit} {ads [9].State} {(ads [9].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
+			});
+        }
 	}
 
 	/// <summary>現在のバナー</summary>
@@ -127,10 +170,12 @@ public class SwitchPanel : MonoBehaviour {
 			case "InterstitialButton":
 				Debug.Log ($"{button.name}");
 				AdMobApi.SetActive (AdSetInterstitial);
+				AdMobApi.SetActive (adSetBanner, current);
 				break;
 			case "RewardedButton":
 				Debug.Log ($"{button.name}");
 				AdMobApi.SetActive (AdSetRewarded);
+				AdMobApi.SetActive (adSetBanner, current);
 				break;
 			case "InfoPanel":
 				Debug.Log ($"{button.name} {InfoPanel.text}");
