@@ -439,7 +439,7 @@ namespace GoogleMobileAds.Utility {
 						}
 					});
 				} else if (Type == AdType.Banner) {
-					if ((bannerView = new BannerView (AdMobObj.AdUnitId [AdType.Banner], bannerSize, bannerPosition)) != null) {
+					if ((bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, bannerPosition)) != null) {
 						bannerView.OnBannerAdLoaded += HandleAdLoaded;
 						bannerView.OnBannerAdLoadFailed += HandleAdFailedToLoad;
 						bannerView.OnAdClicked += HandleAdOpened;
