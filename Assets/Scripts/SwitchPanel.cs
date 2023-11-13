@@ -57,7 +57,9 @@ public class SwitchPanel : MonoBehaviour {
 		new AdMobApi (AdSetBanner2, AdSize.IABBanner, AdPosition.Center);
 		new AdMobApi (AdSetBanner3, new AdSize (320, 100), AdPosition.Bottom);
 		new AdMobApi (AdSetBanner3, AdSize.IABBanner, AdPosition.Center);
+#if (UNITY_ANDROID || UNITY_IPHONE) && ALLOW_ADS
 		dodgeBannerPanel.SetTarget (AdSetBanner0, 0);
+#endif
 		AdMobApi.SetActive (AdSetBanner0);
 		new AdMobApi (AdSetInterstitial);
 		new AdMobApi (AdSetRewarded, OnAdRewarded);
@@ -150,8 +152,8 @@ public class SwitchPanel : MonoBehaviour {
 	}
 #endif
 
-	/// <summary>ボタンが押された</summary>
-	public void OnPushButton (Button button) {
+        /// <summary>ボタンが押された</summary>
+        public void OnPushButton (Button button) {
 #if ALLOW_ADS
 		var current = AdMobApi.GetActive (adSetBanner);
 		switch (button.name) {
@@ -162,7 +164,9 @@ public class SwitchPanel : MonoBehaviour {
 			case "SwapButton":
 				AdMobApi.SetActive (adSetBanner, false);
 				currentBannerSet = (currentBannerSet + 1) % AdSetBanners.Length;
+#if (UNITY_ANDROID || UNITY_IPHONE) && ALLOW_ADS
 				dodgeBannerPanel.SetTarget (adSetBanner, 0);
+#endif
 				AdMobApi.SetActive (adSetBanner, current);
 				Debug.Log ($"{button.name} {adSetBanner}");
 				if (SetNumberDisplay) { SetNumberDisplay.text = currentBannerSet.ToString (); }
@@ -181,9 +185,13 @@ public class SwitchPanel : MonoBehaviour {
 				Debug.Log ($"{button.name} {InfoPanel.text}");
 				GUIUtility.systemCopyBuffer = InfoPanel.text;
 				break;
+			case "SpecialButton":
+				Debug.Log ($"{button.name} {Screen.fullScreen}");
+				Screen.fullScreen = !Screen.fullScreen;
+				break;
 		}
 		if (BannerButtonLavel) { BannerButtonLavel.text = $"{(AdMobApi.GetActive (adSetBanner) ? "☑" : "☐")} Banner"; }
 #endif
-	}
+        }
 
-}
+    }

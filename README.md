@@ -3,8 +3,8 @@ title: Unity で Google Mobile Ads (AdMob) を使う
 tags: Unity AdMob Android iOS C#
 ---
 ## 前提
-- Unity 2022.3.10f1
-- Google Mobile Ads Unity Plugin v8.5.2
+- Unity 2022.3.13f1, 2021.3.32f1
+- Google Mobile Ads Unity Plugin v8.5.3
 - Apple App Store、Google Play Store
 - この記事では、Google Mobile Adsの一部機能を限定的に使用し、汎用性のない部分があります。
 - この記事では、以下の内容を扱いません。
@@ -33,6 +33,8 @@ tags: Unity AdMob Android iOS C#
 - [リリース (GitHub)](https://github.com/googleads/googleads-mobile-unity/releases)
 
 #### プラグインの導入方法
+- サンプルプロジェクトを最初に開いた場合など、Unityエディタ上にエラーが出ている場合は、[サンプルプロジェクトの使い方 > 導入](#サンプルプロジェクトの使い方)を参照してエラーを解消してください。
+    - エラーが出ている状態でプラグインを導入すると、正常に機能しない場合があります。
 - 上記の「リリース」からGoogle Mobile Ads Unity Plugin のパッケージ(`.unitypackage`)をダウンロードします。
 - `Assets` >  `Import Package` > `Custom Package...` でパッケージを導入します。
 - `Assets` > `External Dependency Manager` > `XXXXX Resolver` > `Resolve` を実施します。
@@ -44,12 +46,10 @@ tags: Unity AdMob Android iOS C#
 
 ## サンプルプロジェクトの使い方
 ### 導入
-- このサンプルプロジェクトは、Google Mobile Ads Unity Pluginを含まないため、リポジトリをクローンしてエディタで開こうとするとエラーします。
-- エラーを無視して開きプラグインを導入します。
-    - プロジェクトが開いたら、`Edit` > `Project Settings...` > `Player` > `Other Settings` > `Scripting Define Symbols` で、`ALLOW_ADS`を`_ALLOW_ADS`にして`Apply`ボタンを押してください。
-      - これで、エラーが消えて警告が残ります。
-    - エラーのなくなった状態で、[プラグインを導入](#プラグインの導入方法)して、AppIDの設定まで終えてください。
-    - プラグインの導入が完了したら、シンボル`ALLOW_ADS`を戻して、忘れずに`Apply`ボタンを押してください。
+- このサンプルプロジェクトは、Google Mobile Ads Unity Pluginを含まないため、未導入の状態でリポジトリをクローンしてエディタで開こうとするとエラーします。
+    - エラーが生じている場合は、`Edit` > `Project Settings...` > `Player` > `Other Settings` > `Scripting Define Symbols` で、`ALLOW_ADS`を`_ALLOW_ADS`にして`Apply`ボタンを押してください。
+- エラーのなくなった状態で、[プラグインを導入](#プラグインの導入方法)して、AppIDの設定まで終えてください。
+- プラグインの導入が完了したら、シンボル`ALLOW_ADS`を戻して、忘れずに`Apply`ボタンを押してください。
 
 ### 機能
 - 実行すると、テストバナーを表示します。
