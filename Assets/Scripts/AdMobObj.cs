@@ -165,8 +165,8 @@ namespace GoogleMobileAds.Utility {
 		}
 #endif
 
-		// シングルトン初期化
-		private void Start () {
+        /// <summary>シングルトン初期化</summary>
+        private void Start () {
 			if (instance == null) {
 				instance = this;
 				if (donotDestroy) {
@@ -179,8 +179,17 @@ namespace GoogleMobileAds.Utility {
 			}
 		}
 
-		/// <summary>駆動</summary>
-		private async void Update () {
+        /// <summary>制御状態の変化</summary>
+        private void OnApplicationPause (bool pause) {
+            Debug.Log ($"OnApplicationPause { pause}");
+            if (!pause) {
+                // 復帰したらバナーを再生成
+                AdMobApi.ReMake ();
+            }
+        }
+
+        /// <summary>駆動</summary>
+        private async void Update () {
 			if (instance != this) { return; }
 			if (!isInitializing && AdMobApi.Allow) {
 				// 初期化
