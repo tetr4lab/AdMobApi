@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using GoogleMobileAds.Ump.Api;
+
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Utility;
@@ -44,12 +46,35 @@ public class SwitchPanel : MonoBehaviour {
 	private int coins = 0;
 	private int lastCoins;
 
-	/// <summary>初期化</summary>
-	private IEnumerator Start () {
-		AdMobApi.Allow = true;
-		yield return new WaitUntil (() => AdMobApi.Acceptable);
-		Debug.Log ("App Init");
-		new AdMobApi (AdSetBanner0, true);
+    /// <summary>UMPコールバック</summary>
+    private void OnConsentInfoUpdated (FormError consentError) {
+        if (consentError != null) {
+            // エラー
+            UnityEngine.Debug.LogError (consentError);
+            return;
+        }
+        // 更新情報を取得
+        ConsentForm.LoadAndShowConsentFormIfRequired ((FormError formError) => {
+            if (formError != null) {
+                // 合意の収集に失敗
+                UnityEngine.Debug.LogError (consentError);
+                return;
+            }
+            // 合意を収集した
+            UnityEngine.Debug.Log ("Consent has been gathered.");
+        });
+    }
+    /// <summary>初期化</summary>
+    private IEnumerator Start () {
+        // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
+        ConsentRequestParameters request = new ConsentRequestParameters { TagForUnderAgeOfConsent = false, };
+        // 現在の同意情報の状況を確認します。
+        ConsentInformation.Update (request, OnConsentInfoUpdated);
+        // AdMobの初期化
+        AdMobApi.Allow = true;
+        yield return new WaitUntil (() => AdMobApi.Acceptable);
+        Debug.Log ("App Init");
+        new AdMobApi (AdSetBanner0, true);
 		new AdMobApi (AdSetBanner0, AdSize.IABBanner, AdPosition.Center);
 		new AdMobApi (AdSetBanner1, AdSize.MediumRectangle, AdPosition.Bottom);
 		new AdMobApi (AdSetBanner1, AdSize.IABBanner, AdPosition.Center);
