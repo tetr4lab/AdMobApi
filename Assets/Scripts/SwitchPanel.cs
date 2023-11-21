@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#define UMP_ENABLED
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -46,6 +47,7 @@ public class SwitchPanel : MonoBehaviour {
 	private int coins = 0;
 	private int lastCoins;
 
+#if UMP_ENABLED
     /// <summary>UMPコールバック</summary>
     private void OnConsentInfoUpdated (FormError consentError) {
         if (consentError != null) {
@@ -64,12 +66,16 @@ public class SwitchPanel : MonoBehaviour {
             UnityEngine.Debug.Log ("Consent has been gathered.");
         });
     }
+#endif
+
     /// <summary>初期化</summary>
     private IEnumerator Start () {
+#if UMP_ENABLED
         // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
         ConsentRequestParameters request = new ConsentRequestParameters { TagForUnderAgeOfConsent = false, };
         // 現在の同意情報の状況を確認します。
         ConsentInformation.Update (request, OnConsentInfoUpdated);
+#endif
         // AdMobの初期化
         AdMobApi.Allow = true;
         yield return new WaitUntil (() => AdMobApi.Acceptable);
