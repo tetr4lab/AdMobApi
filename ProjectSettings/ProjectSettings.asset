@@ -828,9 +828,9 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: ALLOW_ADS
+    Android: ALLOW_ADS;UMP_ENABLED;DEBUG_GEOGRAPHY_EEA
     Standalone: _ALLOW_ADS
-    iPhone: ALLOW_ADS
+    iPhone: ALLOW_ADS;UMP_ENABLED;DEBUG_GEOGRAPHY_EEA
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

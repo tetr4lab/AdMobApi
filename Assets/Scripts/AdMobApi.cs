@@ -7,186 +7,253 @@ using UnityEngine;
 using UnityEngine.Serialization;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
+using GoogleMobileAds.Ump.Api;
 
 namespace GoogleMobileAds.Utility {
 
-	/// <summary>論理広告</summary>
-	public class AdMobApi {
+    /// <summary>論理広告</summary>
+    public class AdMobApi {
 
-		/// <summary>状態/要求</summary>
-		public enum Status {
-			/// <summary>初期状態</summary>
-			NONE = 0,
-			/// <summary>読み込み中</summary>
-			LOADING,
-			/// <summary>読み込み済み</summary>
-			LOADED,
-			/// <summary>表示中/summary>
-			SHOWN,
-			/// <summary>非表示中</summary>
-			HIDDEN,
-			/// <summary>削除済み</summary>
-			DELETED,
-		}
+        /// <summary>状態/要求</summary>
+        public enum Status {
+            /// <summary>初期状態</summary>
+            NONE = 0,
+            /// <summary>読み込み中</summary>
+            LOADING,
+            /// <summary>読み込み済み</summary>
+            LOADED,
+            /// <summary>表示中/summary>
+            SHOWN,
+            /// <summary>非表示中</summary>
+            HIDDEN,
+            /// <summary>削除済み</summary>
+            DELETED,
+        }
 
-		#region static
-		// クラス要素
-		/// <summary>初期化トリガー</summary>
-		public static bool Allow {
-			get => _allow;
-			set {
-				_allow = value;
-				Debug.Log ($"AdMobApi Triggered {_allow}");
-				if (!_allow) { // 全停止
-					foreach (var ad in adsList) {
-						ad.Remove ();
-					}
-				}
-			}
-		}
-		protected static bool _allow;
+        #region static
+        // クラス要素
+        /// <summary>初期化トリガー</summary>
+        public static bool Allow {
+            get => _allow;
+            set {
+                _allow = value;
+                Debug.Log ($"AdMobApi Triggered {_allow}");
+                if (!_allow) { // 全停止
+                    foreach (var ad in adsList) {
+                        ad.Remove ();
+                    }
+                }
+            }
+        }
+        protected static bool _allow;
 
-		/// <summary>初期化完了</summary>
-		public static bool Acceptable { get; protected set; }
+        /// <summary>初期化完了</summary>
+        public static bool Acceptable { get; protected set; }
 
-		/// <summary>ロードで失敗した</summary>
-		public static bool FailedToLoad { get; protected set; }
+        /// <summary>ロードで失敗した</summary>
+        public static bool FailedToLoad { get; protected set; }
 
-		/// <summary>生成された広告一覧</summary>
-		protected static List<AdMobApi> adsList = new List<AdMobApi> ();
+        /// <summary>生成された広告一覧</summary>
+        protected static List<AdMobApi> adsList = new List<AdMobApi> ();
 
-		/// <summary>再入抑制用</summary>
-		protected static bool isInitializing;
+        /// <summary>再入抑制用</summary>
+        protected static bool isInitializing;
 
-		/// <summary>指定シーンの広告一覧を得る</summary>
-		public static List<AdMobApi> GetSceneAds (string scene) => adsList?.FindAll (ad => ad.Scene == scene) ?? new List<AdMobApi> { };
+        /// <summary>指定シーンの広告一覧を得る</summary>
+        public static List<AdMobApi> GetSceneAds (string scene) => adsList?.FindAll (ad => ad.Scene == scene) ?? new List<AdMobApi> { };
 
-		/// <summary>指定シーンの最後のユニット番号+1 ユニットがなければ0</summary>
-		public static int GetNextUnitNumber (string scene) => adsList?.FindLast (ad => ad.Scene == scene)?.Unit + 1 ?? 0;
+        /// <summary>指定シーンの最後のユニット番号+1 ユニットがなければ0</summary>
+        public static int GetNextUnitNumber (string scene) => adsList?.FindLast (ad => ad.Scene == scene)?.Unit + 1 ?? 0;
 
-		/// <summary>指定のシーンと番号の広告を得る</summary>
-		public static AdMobApi GetSceneAds (string scene, int unit) => adsList?.Find (ad => ad.Scene == scene && ad.Unit == unit);
+        /// <summary>指定のシーンと番号の広告を得る</summary>
+        public static AdMobApi GetSceneAds (string scene, int unit) => adsList?.Find (ad => ad.Scene == scene && ad.Unit == unit);
 
-		/// <summary>シーンの破棄</summary>
-		/// <param name="scene">シーン (nullなら全て)</param>
-		public static void Destroy (string scene = null) {
-			if (string.IsNullOrEmpty (scene)) {
-				foreach (var ad in adsList) {
-					ad.Remove ();
-				}
-				adsList.Clear ();
-			} else {
-				foreach (var ad in GetSceneAds (scene)) {
-					ad.Destroy ();
-				}
-			}
-		}
+        /// <summary>シーンの破棄</summary>
+        /// <param name="scene">シーン (nullなら全て)</param>
+        public static void Destroy (string scene = null) {
+            if (string.IsNullOrEmpty (scene)) {
+                foreach (var ad in adsList) {
+                    ad.Remove ();
+                }
+                adsList.Clear ();
+            } else {
+                foreach (var ad in GetSceneAds (scene)) {
+                    ad.Destroy ();
+                }
+            }
+        }
 
-		/// <summary>クラス初期化</summary>
-		/// <param name="onCompleted">完了時コールバック</param>
-		public static void Initialize (Action<InitializationStatus> onCompleted = null) {
-			if (Allow && !isInitializing) {
-				Debug.Log ("AdMobApi Init");
-				isInitializing = true;
-				MobileAds.Initialize (status => {
-					Acceptable = true;
-					if (onCompleted != null) {
-						onCompleted (status);
-					}
-					Debug.Log ($"AdMobApi Inited {Acceptable}");
-				});
-			}
-		}
+        /// <summary>クラス初期化</summary>
+        /// <param name="onCompleted">完了時コールバック</param>
+        public static void Initialize (Action<InitializationStatus> onCompleted = null) {
+            if (Allow && !isInitializing) {
+                Debug.Log ("AdMobApi Init");
+                isInitializing = true;
+                MobileAds.Initialize (status => {
+                    Acceptable = true;
+                    if (onCompleted != null) {
+                        onCompleted (status);
+                    }
+                    Debug.Log ($"AdMobApi Inited {Acceptable}");
+                });
+            }
+        }
 
-		/// <summary>全体の活殺制御</summary>
-		public static void SetActive (bool active) {
-			SetActive (null, active);
-		}
+        /// <summary>全体の活殺制御</summary>
+        public static void SetActive (bool active) {
+            SetActive (null, active);
+        }
 
-		/// <summary>活殺制御</summary>
-		public static void SetActive (string scene, bool active = true) {
-			if (Allow && Acceptable) {
-				Debug.Log ($"Ad SetActive {scene} {active}");
-				foreach (var ad in adsList) {
-					if (scene == null || ad.Scene == scene) {
-						ad.ActiveSelf = active;
-					} else if (active) { // 活性時排他制御
-						ad.ActiveSelf = false;
-					}
-				}
-			}
-		}
+        /// <summary>活殺制御</summary>
+        public static void SetActive (string scene, bool active = true) {
+            if (Allow && Acceptable) {
+                Debug.Log ($"Ad SetActive {scene} {active}");
+                foreach (var ad in adsList) {
+                    if (scene == null || ad.Scene == scene) {
+                        ad.ActiveSelf = active;
+                    } else if (active) { // 活性時排他制御
+                        ad.ActiveSelf = false;
+                    }
+                }
+            }
+        }
 
-		/// <summary>活殺取得</summary>
-		public static bool GetActive (string scene) {
-			if (Allow && Acceptable) {
-				//Debug.Log ($"Ad GetActive {scene}");
-				foreach (var ad in adsList) {
-					if (ad.Scene == scene) {
-						return ad.ActiveSelf;
-					}
-				}
-			}
-			return false;
-		}
+        /// <summary>活殺取得</summary>
+        public static bool GetActive (string scene) {
+            if (Allow && Acceptable) {
+                //Debug.Log ($"Ad GetActive {scene}");
+                foreach (var ad in adsList) {
+                    if (ad.Scene == scene) {
+                        return ad.ActiveSelf;
+                    }
+                }
+            }
+            return false;
+        }
 
-		/// <summary>再構築</summary>
-		public static void ReMake (string scene = null, AdType type = AdType.None) {
-			if (Allow && Acceptable) {
-				foreach (var ad in adsList) {
-					if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
-						var request = ad.ShowRequested;
-						if (ad.Type == AdType.Banner || !ad.IsLoaded) {
-							// バナーはロード済みでも再ロード
-							ad.Load (true);
-						}
-						if (ad.Type == AdType.Banner) {
-							// バナーの表示状態を復元
-							ad.ActiveSelf = request;
-						}
-					}
-				}
-				Debug.Log ($"Ad ReMaked {scene}:{adsList.Count} {type} {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a._dirty} {a.ShowRequested}"))}}}");
-			}
-		}
+        /// <summary>再構築</summary>
+        public static void ReMake (string scene = null, AdType type = AdType.None, bool forceReload = false) {
+            if (Allow && Acceptable) {
+                foreach (var ad in adsList) {
+                    if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
+                        var request = ad.ShowRequested;
+                        if (ad.Type == AdType.Banner || !ad.IsLoaded || forceReload) {
+                            // バナーはロード済みでも再ロード
+                            ad.Load (true);
+                        }
+                        if (ad.Type == AdType.Banner) {
+                            // バナーの表示状態を復元
+                            ad.ActiveSelf = request;
+                        }
+                    }
+                }
+                Debug.Log ($"Ad ReMaked {scene}:{adsList.Count} {type} {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a._dirty} {a.ShowRequested}"))}}}");
+            }
+        }
 
-		/// <summary>再ロード</summary>
-		public static void ReLoad () {
-			if (Allow && Acceptable) {
-				foreach (var ad in adsList) {
-					if (ad.State == Status.NONE && !ad.IsLoaded) {
-						// ロードに失敗したと思われる対象
-						var request = ad.ShowRequested;
-						ad.Load (true);
-						if (ad.Type == AdType.Banner) {
-							// バナーの表示状態を復元
-							ad.ActiveSelf = request;
-						}
-						Debug.Log ($"Ad ReLoad {ad.Scene}:{ad.Unit} {ad.Type} {ad.State} {ad._dirty} {ad.ShowRequested}");
-					}
-				}
-				FailedToLoad = false;
-				Debug.Log ($"Ad ReLoad {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a.State} {a._dirty} {a.ShowRequested}"))}}}");
-			}
-		}
+        /// <summary>再ロード</summary>
+        public static void ReLoad () {
+            if (Allow && Acceptable) {
+                foreach (var ad in adsList) {
+                    if (ad.State == Status.NONE && !ad.IsLoaded) {
+                        // ロードに失敗したと思われる対象
+                        var request = ad.ShowRequested;
+                        ad.Load (true);
+                        if (ad.Type == AdType.Banner) {
+                            // バナーの表示状態を復元
+                            ad.ActiveSelf = request;
+                        }
+                        Debug.Log ($"Ad ReLoad {ad.Scene}:{ad.Unit} {ad.Type} {ad.State} {ad._dirty} {ad.ShowRequested}");
+                    }
+                }
+                FailedToLoad = false;
+                Debug.Log ($"Ad ReLoad {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a.State} {a._dirty} {a.ShowRequested}"))}}}");
+            }
+        }
 
-		/// <summary>更新があったことを設定</summary>
-		public static void SetDirty (string scene = null, AdType type = AdType.None) {
-			if (Allow && Acceptable) {
-				Debug.Log ($"Ad Dirty {scene}:{adsList.Count} {type}");
-				foreach (var ad in adsList) {
-					if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
-						ad.Dirty = true;
-					}
-				}
-			}
-		}
-		#endregion
+        /// <summary>更新があったことを設定</summary>
+        public static void SetDirty (string scene = null, AdType type = AdType.None) {
+            if (Allow && Acceptable) {
+                Debug.Log ($"Ad Dirty {scene}:{adsList.Count} {type}");
+                foreach (var ad in adsList) {
+                    if ((scene == null || ad.Scene == scene) && (type == AdType.None || ad.Type == type)) {
+                        ad.Dirty = true;
+                    }
+                }
+            }
+        }
 
-		// メンバー要素
+#if UMP_ENABLED
+        /// <summary>UMP同意状況</summary>
+        public static bool UmpConsented => _consented == true;
 
-		/// <summary>シーン名</summary>
-		public string Scene { get; protected set; }
+        /// <summary>GDPR適用域内 (UmpConsentedが偽なら無効)</summary>
+        public static bool UmpConsentRequired { get; private set; }
+
+        /// <summary>UMP同意要求</summary>
+        public static IEnumerator UmpConsentRequest () {
+            // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
+            var request = new ConsentRequestParameters {
+                TagForUnderAgeOfConsent = false,
+#if DEBUG_GEOGRAPHY_EEA
+                // 仮想的に欧州経済領域内にする
+                ConsentDebugSettings = new ConsentDebugSettings {
+                    DebugGeography = DebugGeography.EEA,
+                    TestDeviceHashedIds = new List<string> { SystemInfo.deviceUniqueIdentifier.ToUpper (), },
+                },
+#endif
+            };
+#if DEBUG_GEOGRAPHY_EEA
+            UnityEngine.Debug.LogWarning ("DEBUG_GEOGRAPHY_EEA");
+#endif
+            // 現在の同意情報の状況を確認
+            ConsentInformation.Update (request, (FormError consentError) => {
+                // コールバック
+                if (consentError != null) {
+                    // エラー
+                    Debug.LogError (consentError);
+                    return;
+                }
+                // 更新情報を取得
+                ConsentForm.LoadAndShowConsentFormIfRequired ((FormError formError) => {
+                    if (formError != null) {
+                        // 同意の所得に失敗
+                        Debug.LogError (consentError);
+                        _consented = false;
+                        return;
+                    }
+                    // 同意を得た
+                    _consented = true;
+                    Debug.Log ($"Consent has been {ConsentInformation.ConsentStatus}.");
+                });
+            });
+            // 同意を待機
+            yield return new WaitWhile (() => _consented == null);
+            // 同意が必要なら域内 (UMP内でメモリ・リークがあるっぽいのでキャッシュする)
+            UmpConsentRequired = ConsentInformation.PrivacyOptionsRequirementStatus == PrivacyOptionsRequirementStatus.Required;
+        }
+
+        /// <summary>UMP同意状況(内部使用)</summary>
+        private static bool? _consented { get; set; } = null;
+
+        /// <summary>再同意要求</summary>
+        public static void UmpPrivacyOptionsRequest () {
+            ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
+                if (showError != null) {
+                    Debug.LogError ("Error showing privacy options form with error: " + showError.Message);
+                } else {
+                    ReMake (forceReload: true);
+                    ;
+                }
+            });
+        }
+#endif
+        #endregion
+
+        // メンバー要素
+
+        /// <summary>シーン名</summary>
+        public string Scene { get; protected set; }
 
 		/// <summary>ユニット番号</summary>
 		public int Unit { get; protected set; } = 0;

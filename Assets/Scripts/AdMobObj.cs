@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
-#if ALLOW_ADS
-using GoogleMobileAds.Api;
-#endif
 using Tetr4lab;
 
 /// <summary>
@@ -76,8 +73,8 @@ namespace GoogleMobileAds.Utility {
 	public class AdMobObj : MonoBehaviour {
 
 		#region static
-		/// <summary>ロード失敗後のフレーム数の閾値</summary>
-		private const int LoadFailureThreshold = 1;
+		/// <summary>ロード失敗後のリトライ間隔フレーム数</summary>
+		private const int ReLoadIntervalFrames = 300;
 
 		// シングルトンインスタンス
 		private static AdMobObj instance;
@@ -89,10 +86,10 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>広告表示体の取得</summary>
 		public static RectTransform GetAdRectTransform (int index = -1, string name = null, float width = 0f, float height = 0f) => instance.FindAdObject (index, name, width, height)?.GetComponent<RectTransform> ();
 #endif
-		#endregion static
+        #endregion static
 
-		/// <summary>インスペクタで定義可能な広告ユニットID</summary>
-		[SerializeField]
+        /// <summary>インスペクタで定義可能な広告ユニットID</summary>
+        [SerializeField]
 		private AdUnitIDs adUnitId = new AdUnitIDs {
 			{ RuntimePlatform.Android,      AdType.Banner,       "ca-app-pub-3940256099942544/6300978111" },
 			{ RuntimePlatform.Android,      AdType.Interstitial, "ca-app-pub-3940256099942544/1033173712" },
@@ -102,13 +99,13 @@ namespace GoogleMobileAds.Utility {
 			{ RuntimePlatform.IPhonePlayer, AdType.Rewarded,     "ca-app-pub-3940256099942544/1712485313" },
 		};
 
-		/// <summary>複数シーンで共有 (使用の際はルートオブジェクトにアタッチのこと)</summary>
-		[SerializeField]
-		private bool donotDestroy = false;
+        /// <summary>複数シーンで共有 (使用の際はルートオブジェクトにアタッチのこと)</summary>
+        [SerializeField]
+        private bool donotDestroy = false;
 
 #if ALLOW_ADS
-		/// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
-		private const int OnlineDelayTime = 500;
+        /// <summary>再接続時の再構築開始までの遅延時間(ms)</summary>
+        private const int OnlineDelayTime = 500;
 
 		/// <summary>画面サイズ変化時の再構築開始までの遅延時間(ms)</summary>
 		private const int ChangeScreenDelayTime = 200;
@@ -126,8 +123,8 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>画面のサイズ</summary>
 		private Vector2Int lastScreenSize;
 
-		/// <summary>失敗後のフレーム数</summary>
-		private int loadFailureFrames = -1;
+		/// <summary>失敗後の経過フレーム数</summary>
+		private int elapsedFramesSinceLoadFailure = -1;
 
 #if UNITY_EDITOR
 		/// <summary>表示体を特定する</summary>
@@ -173,7 +170,7 @@ namespace GoogleMobileAds.Utility {
 					DontDestroyOnLoad (gameObject);
 				}
 			} else {
-				Debug.LogError ($"singleton duplicated on {GetPath (transform)}", gameObject);
+                Debug.LogError ($"singleton duplicated on {GetPath (transform)}", gameObject);
 				Destroy (this);
 				string GetPath (Transform node) => (node == null) ? "" : $"{GetPath (node.parent)}/{node.name}";
 			}
@@ -190,8 +187,8 @@ namespace GoogleMobileAds.Utility {
 
         /// <summary>駆動</summary>
         private async void Update () {
-			if (instance != this) { return; }
-			if (!isInitializing && AdMobApi.Allow) {
+			if (instance != this || !AdMobApi.Allow) { return; }
+			if (!isInitializing) {
 				// 初期化
 				isInitializing = true;
 				AdMobApi.Initialize ();
@@ -231,10 +228,10 @@ namespace GoogleMobileAds.Utility {
 				}
 				// 失敗したロードのリトライ
 				if (!remaking && AdMobApi.FailedToLoad && isOnLine) {
-					loadFailureFrames = (loadFailureFrames < 0) ? 0 : loadFailureFrames + 1;
-					if (loadFailureFrames >= LoadFailureThreshold) {
+					elapsedFramesSinceLoadFailure = (elapsedFramesSinceLoadFailure < 0) ? 0 : elapsedFramesSinceLoadFailure + 1;
+					if (elapsedFramesSinceLoadFailure >= ReLoadIntervalFrames) {
 						AdMobApi.ReLoad ();
-						loadFailureFrames = -1;
+						elapsedFramesSinceLoadFailure = -1;
 					}
 				}
 				isExclusionControling = false;
@@ -249,10 +246,10 @@ namespace GoogleMobileAds.Utility {
 
 #endif
 
-	}
+    }
 
-	/// <summary>広告タイプ</summary>
-	public enum AdType {
+    /// <summary>広告タイプ</summary>
+    public enum AdType {
 		None = 0,
 		Banner,
 		Interstitial,

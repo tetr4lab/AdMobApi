@@ -3,10 +3,10 @@ title: Unity で Google Mobile Ads (AdMob) を使う
 tags: Unity AdMob Android iOS C#
 ---
 ## 前提
-- Unity 2022.3.13f1, 2021.3.32f1
+- Unity 2022.3.15f1
 - Google Mobile Ads Unity Plugin v8.5.3
 - Apple App Store、Google Play Store
-- この記事では、Google Mobile Adsの一部機能を限定的に使用し、汎用性のない部分があります。
+- この記事では、Google Mobile Ads Unity Pluginの一部機能を限定的に使用し、汎用性のない部分があります。
 - この記事では、以下の内容を扱いません。
   - 各ストアのルールやコンソールの使い方など
   - Google Mobile Adsのルールやコンソールの使い方など
@@ -77,6 +77,10 @@ tags: Unity AdMob Android iOS C#
     - サンプルシーンです。
   - `SwitchPanel.cs`
     - サンプルシーンで広告を制御しています。
+
+#### EEA域外でUMPのテストを行う
+- シンボル`DEBUG_GEOGRAPHY_EEA`が定義されていると、対象領域の外でもUMPのダイアログが表示されるようになります。
+- なお、AdMobコンソールの同意管理プラットフォーム(CMP)で「GDPRが適用される国」**以外**もターゲットに指定した場合は、この設定に拠らず常にダイアログが表示されます。
 
 ## 自分のプロジェクトでの使い方
 

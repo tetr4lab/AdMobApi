@@ -1,9 +1,7 @@
-﻿#define UMP_ENABLED
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using GoogleMobileAds.Ump.Api;
 
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
@@ -33,6 +31,9 @@ public class SwitchPanel : MonoBehaviour {
 	/// <summary>デバッグ情報表示体</summary>
 	[SerializeField] private Text DebugInfoPanel = default;
 
+    /// <summary>プライバシーボタン</summary>
+    [SerializeField] private Button PrivacyButton = default;
+
 	// 広告シーン
 	public static readonly string AdSetBanner0 = "banner0";
 	public static readonly string AdSetBanner1 = "banner1";
@@ -40,62 +41,42 @@ public class SwitchPanel : MonoBehaviour {
 	public static readonly string AdSetBanner3 = "banner3";
 	public static readonly string AdSetInterstitial = "interstitial";
 	public static readonly string AdSetRewarded = "rewarded";
-	public static readonly string [] AdSetBanners = new [] { AdSetBanner0, AdSetBanner1, AdSetBanner2, AdSetBanner3, };
+	public static readonly string [] AdSetBanners = new [] {
+        AdSetBanner0,
+        AdSetBanner1,
+        //AdSetBanner2,
+        //AdSetBanner3,
+    };
 
 #if ALLOW_ADS
 	/// <summary>累積獲得数</summary>
 	private int coins = 0;
 	private int lastCoins;
 
-#if UMP_ENABLED
-    /// <summary>UMPコールバック</summary>
-    private void OnConsentInfoUpdated (FormError consentError) {
-        if (consentError != null) {
-            // エラー
-            UnityEngine.Debug.LogError (consentError);
-            return;
-        }
-        // 更新情報を取得
-        ConsentForm.LoadAndShowConsentFormIfRequired ((FormError formError) => {
-            if (formError != null) {
-                // 合意の収集に失敗
-                UnityEngine.Debug.LogError (consentError);
-                return;
-            }
-            // 合意を収集した
-            UnityEngine.Debug.Log ("Consent has been gathered.");
-        });
-    }
-#endif
-
     /// <summary>初期化</summary>
     private IEnumerator Start () {
 #if UMP_ENABLED
-        // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
-        ConsentRequestParameters request = new ConsentRequestParameters { TagForUnderAgeOfConsent = false, };
-        // 現在の同意情報の状況を確認します。
-        ConsentInformation.Update (request, OnConsentInfoUpdated);
+        // 同意を待機
+        yield return AdMobApi.UmpConsentRequest ();
+        // プライバシーボタンの活殺
+        PrivacyButton.interactable = AdMobApi.UmpConsentRequired;
 #endif
         // AdMobの初期化
         AdMobApi.Allow = true;
         yield return new WaitUntil (() => AdMobApi.Acceptable);
         Debug.Log ("App Init");
-        new AdMobApi (AdSetBanner0, true);
+        var banner0 = new AdMobApi (AdSetBanner0, true);
 		new AdMobApi (AdSetBanner0, AdSize.IABBanner, AdPosition.Center);
-		new AdMobApi (AdSetBanner1, AdSize.MediumRectangle, AdPosition.Bottom);
-		new AdMobApi (AdSetBanner1, AdSize.IABBanner, AdPosition.Center);
-		new AdMobApi (AdSetBanner2, AdSize.Banner, AdPosition.Bottom);
-		new AdMobApi (AdSetBanner2, AdSize.IABBanner, AdPosition.Center);
-		new AdMobApi (AdSetBanner3, new AdSize (320, 100), AdPosition.Bottom);
-		new AdMobApi (AdSetBanner3, AdSize.IABBanner, AdPosition.Center);
+        new AdMobApi (AdSetBanner1, AdSize.MediumRectangle, AdPosition.Bottom);
+        new AdMobApi (AdSetBanner1, AdSize.IABBanner, AdPosition.Center);
 #if (UNITY_ANDROID || UNITY_IPHONE) && ALLOW_ADS
-		dodgeBannerPanel.SetTarget (AdSetBanner0, 0);
+        dodgeBannerPanel.SetTarget (AdSetBanner0, 0);
 #endif
 		AdMobApi.SetActive (AdSetBanner0);
-		new AdMobApi (AdSetInterstitial);
-		new AdMobApi (AdSetRewarded, OnAdRewarded);
-		// AdIdの取得
-		string adid = null;
+        new AdMobApi (AdSetInterstitial);
+        new AdMobApi (AdSetRewarded, OnAdRewarded);
+        // AdIdの取得
+        string adid = null;
 		if (Application.platform == RuntimePlatform.Android) {
 			// Application.RequestAdvertisingIdentifierAsync()がAndroid非対応になったので
 			try {
@@ -118,8 +99,19 @@ public class SwitchPanel : MonoBehaviour {
 				adid = "wait...";
 			}
 		}
-		InfoPanel.text = (adid == null) ? "No AdId" : $"AdId: {adid}";
-		Debug.Log ("App Inited");
+		InfoPanel.text = $"{((adid == null) ? "No AdId" : $"AdId: {adid}")}\nDeviceId: {SystemInfo.deviceUniqueIdentifier}";
+        // 追加のバナー
+        if (AdSetBanners.Length > 2) {
+            // 最初のバナーが読み込まれるまで待つ
+            yield return new WaitUntil (() => banner0.State >= AdMobApi.Status.LOADED);
+            new AdMobApi (AdSetBanner2, AdSize.Banner, AdPosition.Bottom);
+            new AdMobApi (AdSetBanner2, AdSize.IABBanner, AdPosition.Center);
+            if (AdSetBanners.Length > 3) {
+                new AdMobApi (AdSetBanner3, new AdSize (320, 100), AdPosition.Bottom);
+                new AdMobApi (AdSetBanner3, AdSize.IABBanner, AdPosition.Center);
+            }
+        }
+        Debug.Log ($"App Inited {InfoPanel.text}");
 	}
 
 	/// <summary>駆動</summary>
@@ -130,48 +122,38 @@ public class SwitchPanel : MonoBehaviour {
 		}
 		if (DebugInfoPanel) {
 			var isOnline = Application.internetReachability != NetworkReachability.NotReachable;
-			var ads = new [] {
-				AdMobApi.GetSceneAds (AdSetRewarded, 0),
-				AdMobApi.GetSceneAds (AdSetInterstitial, 0),
-				AdMobApi.GetSceneAds (AdSetBanner0, 0),
-				AdMobApi.GetSceneAds (AdSetBanner0, 1),
-				AdMobApi.GetSceneAds (AdSetBanner1, 0),
-				AdMobApi.GetSceneAds (AdSetBanner1, 1),
-				AdMobApi.GetSceneAds (AdSetBanner2, 0),
-				AdMobApi.GetSceneAds (AdSetBanner2, 1),
-				AdMobApi.GetSceneAds (AdSetBanner3, 0),
-				AdMobApi.GetSceneAds (AdSetBanner3, 1),
-			};
-			var isLoaded =
-				(ads [0] == null || ads [0].IsLoaded) && 
-				(ads [1] == null || ads [1].IsLoaded) && 
-				(ads [2] == null || ads [2].IsLoaded) && 
-				(ads [3] == null || ads [3].IsLoaded) && 
-				(ads [4] == null || ads [4].IsLoaded) && 
-				(ads [5] == null || ads [5].IsLoaded) && 
-				(ads [6] == null || ads [6].IsLoaded) && 
-				(ads [7] == null || ads [7].IsLoaded) && 
-				(ads [8] == null || ads [8].IsLoaded) &&
-				(ads [9] == null || ads [9].IsLoaded);
-			DebugInfoPanel.text = !AdMobApi.Acceptable ? "" : string.Join ("\n", new string [] {
-				$"<size=40>{(isOnline && isLoaded == false ? "<color=red>対応中</color>" : "<color=green>待機中</color>")}</size>",
-				$"{(isOnline ? "<color=green>ONLINE</color>" : "<color=red>OFFLINE</color>")} {(AdMobApi.FailedToLoad ? "<color=red>FailedToLoad</color>" : "")}",
-				ads [0] == null ? "" : $"{ads [0].Scene}:{ads [0].Unit} {ads [0].State} {(ads [0].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [1] == null ? "" : $"{ads [1].Scene}:{ads [1].Unit} {ads [1].State} {(ads [1].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [2] == null ? "" : $"{ads [2].Scene}:{ads [2].Unit} {ads [2].State} {(ads [2].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [3] == null ? "" : $"{ads [3].Scene}:{ads [3].Unit} {ads [3].State} {(ads [3].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [4] == null ? "" : $"{ads [4].Scene}:{ads [4].Unit} {ads [4].State} {(ads [4].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [5] == null ? "" : $"{ads [5].Scene}:{ads [5].Unit} {ads [5].State} {(ads [5].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [6] == null ? "" : $"{ads [6].Scene}:{ads [6].Unit} {ads [6].State} {(ads [6].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [7] == null ? "" : $"{ads [7].Scene}:{ads [7].Unit} {ads [7].State} {(ads [7].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [8] == null ? "" : $"{ads [8].Scene}:{ads [8].Unit} {ads [8].State} {(ads [8].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-				ads [9] == null ? "" : $"{ads [9].Scene}:{ads [9].Unit} {ads [9].State} {(ads [9].IsLoaded ? "IsLoaded" : "<color=red>!IsLoaded</color>")}",
-			});
+            var ads = new List<AdMobApi> {
+                AdMobApi.GetSceneAds (AdSetRewarded, 0),
+                AdMobApi.GetSceneAds (AdSetInterstitial, 0),
+            };
+            foreach (var ad in AdSetBanners) {
+                ads.Add (AdMobApi.GetSceneAds (ad, 0));
+                ads.Add (AdMobApi.GetSceneAds (ad, 1));
+            }
+			var isLoaded = true;
+            foreach (var ad in ads) {
+                if (ad != null && !ad.IsLoaded) {
+                    isLoaded = false;
+                    break;
+                }
+            }
+            DebugInfoPanel.text = !AdMobApi.Acceptable ? "" : string.Join ("\n", new string [] {
+#if UMP_ENABLED
+                $"GDPR適用領域{(AdMobApi.UmpConsentRequired ? "内" : "外")}, {(AdMobApi.UmpConsented ? "確認済" : "未確認")}",
+#endif
+                $"<size=40>{(isOnline && isLoaded == false ? "<color=red>対応中</color>" : "<color=green>待機中</color>")}</size>",
+                $"{(isOnline ? "<color=green>ONLINE</color>" : "<color=red>OFFLINE</color>")} {(AdMobApi.FailedToLoad ? "<color=red>FailedToLoad</color>" : "")}",
+            }) + "\n";
+            foreach (var ad in ads) {
+                if (ad != null) {
+                    DebugInfoPanel.text += $"{ad.Scene}:{ad.Unit} {ad.State} {(ad.IsLoaded ? "isLoaded" : "<color=red>notLoaded</color>")}\n";
+                }
+            }
         }
-	}
+    }
 
-	/// <summary>現在のバナー</summary>
-	private string adSetBanner => AdSetBanners [currentBannerSet];
+    /// <summary>現在のバナー</summary>
+    private string adSetBanner => AdSetBanners [currentBannerSet];
 
 	/// <summary>現在のバナー</summary>
 	private int currentBannerSet;
@@ -216,10 +198,12 @@ public class SwitchPanel : MonoBehaviour {
 				Debug.Log ($"{button.name} {InfoPanel.text}");
 				GUIUtility.systemCopyBuffer = InfoPanel.text;
 				break;
-			case "SpecialButton":
-				Debug.Log ($"{button.name} {Screen.fullScreen}");
-				Screen.fullScreen = !Screen.fullScreen;
-				break;
+			case "PrivacyButton":
+				Debug.Log ($"{button.name} {button.interactable}");
+#if UMP_ENABLED && !UNITY_EDITOR
+                AdMobApi.UmpPrivacyOptionsRequest ();
+#endif
+                break;
 		}
 		if (BannerButtonLavel) { BannerButtonLavel.text = $"{(AdMobApi.GetActive (adSetBanner) ? "☑" : "☐")} Banner"; }
 #endif
