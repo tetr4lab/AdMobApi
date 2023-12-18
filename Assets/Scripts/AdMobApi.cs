@@ -192,6 +192,7 @@ namespace GoogleMobileAds.Utility {
 
         /// <summary>UMP同意要求</summary>
         public static IEnumerator UmpConsentRequest () {
+            var deviceId = SystemInfo.deviceUniqueIdentifier.ToUpper ();
             // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
             var request = new ConsentRequestParameters {
                 TagForUnderAgeOfConsent = false,
@@ -199,12 +200,12 @@ namespace GoogleMobileAds.Utility {
                 // 仮想的に欧州経済領域内にする
                 ConsentDebugSettings = new ConsentDebugSettings {
                     DebugGeography = DebugGeography.EEA,
-                    TestDeviceHashedIds = new List<string> { SystemInfo.deviceUniqueIdentifier.ToUpper (), },
+                    TestDeviceHashedIds = new List<string> { deviceId, },
                 },
 #endif
             };
 #if DEBUG_GEOGRAPHY_EEA
-            UnityEngine.Debug.LogWarning ("DEBUG_GEOGRAPHY_EEA");
+            UnityEngine.Debug.LogWarning ($"DEBUG_GEOGRAPHY_EEA on {deviceId}");
 #endif
             // 現在の同意情報の状況を確認
             ConsentInformation.Update (request, (FormError consentError) => {
@@ -224,7 +225,7 @@ namespace GoogleMobileAds.Utility {
                     }
                     // 同意を得た
                     _consented = true;
-                    Debug.Log ($"Consent has been {ConsentInformation.ConsentStatus}.");
+                    Debug.Log ($"Consent has been {ConsentInformation.ConsentStatus}.\nPrivacy options has been {ConsentInformation.PrivacyOptionsRequirementStatus}.");
                 });
             });
             // 同意を待機
