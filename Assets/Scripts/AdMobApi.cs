@@ -53,6 +53,9 @@ namespace GoogleMobileAds.Utility {
         /// <summary>ロードで失敗した</summary>
         public static bool FailedToLoad { get; protected set; }
 
+        /// <summary>連続失敗回数</summary>
+        public static int ContinuousFailureTimes { get; protected set; }
+
         /// <summary>生成された広告一覧</summary>
         protected static List<AdMobApi> adsList = new List<AdMobApi> ();
 
@@ -590,7 +593,8 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>ロードされた Called when an ad request has successfully loaded.</summary>
 		protected void HandleAdLoaded (ResponseInfo response) {
 			State = Status.LOADED;
-			Debug.Log ($"Ad Loaded {Scene}:{Unit} {Type} {response} {ShowRequested} {Valid} {State}");
+            ContinuousFailureTimes = 0;
+            Debug.Log ($"Ad Loaded {Scene}:{Unit} {Type} {response} {ShowRequested} {Valid} {State}");
 			if (ShowRequested) {
 				Show ();
 			}
@@ -604,6 +608,7 @@ namespace GoogleMobileAds.Utility {
 			Remove (false);
 			Debug.Log ($"Ad Failed To Load {Scene}:{Unit} {Type} {State} {_dirty} {ShowRequested} {error?.GetMessage ()}");
 			FailedToLoad = true;
+            ContinuousFailureTimes++;
 		}
 
 		/// <summary>表示された(バナー以外) / クリックされた(バナー) Called when an ad is shown or clicked.</summary>
