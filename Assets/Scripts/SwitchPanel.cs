@@ -142,7 +142,7 @@ public class SwitchPanel : MonoBehaviour {
                 $"GDPR適用領域{(AdMobApi.UmpConsentRequired ? "内" : "外")}, {(AdMobApi.UmpConsented ? "確認済" : "未確認")}",
 #endif
                 $"<size=40>{(isOnline && isLoaded == false ? "<color=red>対応中</color>" : "<color=green>待機中</color>")}</size>",
-                $"{(isOnline ? "<color=green>ONLINE</color>" : "<color=red>OFFLINE</color>")} {(AdMobApi.FailedToLoad ? $"<color=red>FailedToLoad {(AdMobApi.ContinuousFailureTimes > 1 ? $"{AdMobApi.ContinuousFailureTimes}times" : "onece")}</color>" : "")}",
+                $"{(isOnline ? "<color=green>ONLINE</color>" : "<color=red>OFFLINE</color>")} {(AdMobApi.IsAnyLoadFailed ? $"<color=red>FailedToLoad {(AdMobApi.MostConsecutiveFailures > 1 ? $"{AdMobApi.MostConsecutiveFailures}times" : "onece")}</color>" : "")}",
             }) + "\n";
             foreach (var ad in ads) {
                 if (ad != null) {

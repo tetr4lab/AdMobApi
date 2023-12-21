@@ -227,7 +227,7 @@ namespace GoogleMobileAds.Utility {
 					}
 				}
 				// 失敗したロードのリトライ
-				if (!remaking && AdMobApi.FailedToLoad && isOnLine) {
+				if (!remaking && AdMobApi.IsAnyLoadFailed && isOnLine) {
 					elapsedFramesSinceLoadFailure = (elapsedFramesSinceLoadFailure < 0) ? 0 : elapsedFramesSinceLoadFailure + 1;
 					if (elapsedFramesSinceLoadFailure >= ReLoadIntervalFrames) {
 						AdMobApi.ReLoad ();

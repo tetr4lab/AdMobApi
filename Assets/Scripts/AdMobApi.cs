@@ -51,10 +51,33 @@ namespace GoogleMobileAds.Utility {
         public static bool Acceptable { get; protected set; }
 
         /// <summary>ロードで失敗した</summary>
-        public static bool FailedToLoad { get; protected set; }
+        public static bool IsAnyLoadFailed => adsList?.Find (ad => ad.FailedToLoad) != null;
 
-        /// <summary>連続失敗回数</summary>
-        public static int ContinuousFailureTimes { get; protected set; }
+        /// <summary>連続失敗回数 (合計)</summary>
+        public static int TotalConsecutiveFailures {
+            get {
+                var num = 0;
+                if (adsList != null) {
+                    foreach (var ad in adsList) {
+                        num += ad.ConsecutiveFailures;
+                    }
+                }
+                return num;
+            }
+        }
+
+        /// <summary>連続失敗回数 (最大)</summary>
+        public static int MostConsecutiveFailures {
+            get {
+                var num = 0;
+                if (adsList != null) {
+                    foreach (var ad in adsList) {
+                        if (num < ad.ConsecutiveFailures) { num = ad.ConsecutiveFailures; }
+                    }
+                }
+                return num;
+            }
+        }
 
         /// <summary>生成された広告一覧</summary>
         protected static List<AdMobApi> adsList = new List<AdMobApi> ();
@@ -158,7 +181,7 @@ namespace GoogleMobileAds.Utility {
         public static void ReLoad () {
             if (Allow && Acceptable) {
                 foreach (var ad in adsList) {
-                    if (ad.State == Status.NONE && !ad.IsLoaded) {
+                    if (ad.FailedToLoad || (ad.State == Status.NONE && !ad.IsLoaded)) {
                         // ロードに失敗したと思われる対象
                         var request = ad.ShowRequested;
                         ad.Load (true);
@@ -169,7 +192,6 @@ namespace GoogleMobileAds.Utility {
                         Debug.Log ($"Ad ReLoad {ad.Scene}:{ad.Unit} {ad.Type} {ad.State} {ad._dirty} {ad.ShowRequested}");
                     }
                 }
-                FailedToLoad = false;
                 Debug.Log ($"Ad ReLoad {{{string.Join (", ", adsList.ConvertAll (a => $"{a.Scene}:{a.Unit} {a.Type} {a.State} {a._dirty} {a.ShowRequested}"))}}}");
             }
         }
@@ -275,8 +297,15 @@ namespace GoogleMobileAds.Utility {
 		}
 		protected Status _state;
 
-		/// <summary>表示要求</summary>
-		protected bool ShowRequested {
+
+        /// <summary>ロードで失敗した</summary>
+        protected bool FailedToLoad { get; set; }
+
+        /// <summary>連続失敗回数</summary>
+        protected int ConsecutiveFailures { get; set; }
+
+        /// <summary>表示要求</summary>
+        protected bool ShowRequested {
 			get => _request;
 			set {
 				//Debug.Log ($"Ad Request {Scene}:{Unit} {_request} => {value}");
@@ -475,13 +504,15 @@ namespace GoogleMobileAds.Utility {
 			}
 #endif
 			if (withdraw) { ShowRequested = false; }
-			State = Status.NONE;
+            FailedToLoad = false;
+            State = Status.NONE;
 		}
 
 		/// <summary>読込</summary>
 		protected void Load (bool force = false) {
 			if (Valid && (force || (State != Status.LOADING && State != Status.LOADED))) {
-				Remove ();
+                // 読み込み中のままになった場合を想定して、強制時は、読み込み中でも再読み込みする
+                Remove ();
 				Debug.Log ($"Ad Load {Scene}:{Unit} {Type}");
 #if (UNITY_ANDROID || UNITY_IOS)
 				var adRequest = new AdRequest ();
@@ -593,7 +624,7 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>ロードされた Called when an ad request has successfully loaded.</summary>
 		protected void HandleAdLoaded (ResponseInfo response) {
 			State = Status.LOADED;
-            ContinuousFailureTimes = 0;
+            ConsecutiveFailures = 0;
             Debug.Log ($"Ad Loaded {Scene}:{Unit} {Type} {response} {ShowRequested} {Valid} {State}");
 			if (ShowRequested) {
 				Show ();
@@ -607,8 +638,8 @@ namespace GoogleMobileAds.Utility {
 		protected void HandleAdFailedToLoad (LoadAdError error) {
 			Remove (false);
 			Debug.Log ($"Ad Failed To Load {Scene}:{Unit} {Type} {State} {_dirty} {ShowRequested} {error?.GetMessage ()}");
-			FailedToLoad = true;
-            ContinuousFailureTimes++;
+            FailedToLoad = true;
+            ConsecutiveFailures++;
 		}
 
 		/// <summary>表示された(バナー以外) / クリックされた(バナー) Called when an ad is shown or clicked.</summary>
