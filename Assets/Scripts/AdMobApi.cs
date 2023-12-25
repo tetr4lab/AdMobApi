@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Tetr4lab;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Ump.Api;
@@ -216,7 +217,7 @@ namespace GoogleMobileAds.Utility {
         public static bool UmpConsentRequired { get; private set; }
 
         /// <summary>UMP同意要求</summary>
-        public static IEnumerator UmpConsentRequest () {
+        public static async Task UmpConsentRequest () {
             var deviceId = SystemInfo.deviceUniqueIdentifier.ToUpper ();
             // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
             var request = new ConsentRequestParameters {
@@ -254,7 +255,7 @@ namespace GoogleMobileAds.Utility {
                 });
             });
             // 同意を待機
-            yield return new WaitWhile (() => _consented == null);
+            await TaskEx.DelayWhile (() => _consented == null);
             // 同意が必要なら域内 (UMP内でメモリ・リークがあるっぽいのでキャッシュする)
             UmpConsentRequired = ConsentInformation.PrivacyOptionsRequirementStatus == PrivacyOptionsRequirementStatus.Required;
         }

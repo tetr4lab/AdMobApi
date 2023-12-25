@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using Tetr4lab;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Utility;
@@ -54,16 +54,16 @@ public class SwitchPanel : MonoBehaviour {
 	private int lastCoins;
 
     /// <summary>初期化</summary>
-    private IEnumerator Start () {
+    private async void Start () {
 #if UMP_ENABLED
         // 同意を待機
-        yield return AdMobApi.UmpConsentRequest ();
+        await AdMobApi.UmpConsentRequest ();
         // プライバシーボタンの活殺
         PrivacyButton.interactable = AdMobApi.UmpConsentRequired;
 #endif
         // AdMobの初期化
         AdMobApi.Allow = true;
-        yield return new WaitUntil (() => AdMobApi.Acceptable);
+        await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
         Debug.Log ("App Init");
         var banner0 = new AdMobApi (AdSetBanner0, true);
 		new AdMobApi (AdSetBanner0, AdSize.IABBanner, AdPosition.Center);
@@ -103,7 +103,7 @@ public class SwitchPanel : MonoBehaviour {
         // 追加のバナー
         if (AdSetBanners.Length > 2) {
             // 最初のバナーが読み込まれるまで待つ
-            yield return new WaitUntil (() => banner0.State >= AdMobApi.Status.LOADED);
+            await TaskEx.DelayUntil (() => banner0.State >= AdMobApi.Status.LOADED);
             new AdMobApi (AdSetBanner2, AdSize.Banner, AdPosition.Bottom);
             new AdMobApi (AdSetBanner2, AdSize.IABBanner, AdPosition.Center);
             if (AdSetBanners.Length > 3) {
