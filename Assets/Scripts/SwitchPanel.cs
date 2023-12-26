@@ -57,7 +57,7 @@ public class SwitchPanel : MonoBehaviour {
     private async void Start () {
 #if UMP_ENABLED
         // 同意を待機
-        await AdMobApi.UmpConsentRequest ();
+        await AdMobApi.UmpConsentRequestAsync ();
         // プライバシーボタンの活殺
         PrivacyButton.interactable = AdMobApi.UmpConsentRequired;
 #endif

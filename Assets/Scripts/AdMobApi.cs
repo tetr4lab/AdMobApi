@@ -217,7 +217,7 @@ namespace GoogleMobileAds.Utility {
         public static bool UmpConsentRequired { get; private set; }
 
         /// <summary>UMP同意要求</summary>
-        public static async Task UmpConsentRequest () {
+        public static async Task UmpConsentRequestAsync () {
             var deviceId = SystemInfo.deviceUniqueIdentifier.ToUpper ();
             // 同意年齢未満のタグを設定 (falseなら同意年齢に達していない)
             var request = new ConsentRequestParameters {
