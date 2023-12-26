@@ -80,6 +80,15 @@ namespace GoogleMobileAds.Utility {
             }
         }
 
+        /// <summary>連続失敗回数をリセット</summary>
+        public static void ResetLoadFailures () {
+            if (adsList != null) {
+                foreach (var ad in adsList) {
+                    ad.ConsecutiveFailures = 0;
+                }
+            }
+        }
+
         /// <summary>生成された広告一覧</summary>
         protected static List<AdMobApi> adsList = new List<AdMobApi> ();
 
@@ -234,11 +243,13 @@ namespace GoogleMobileAds.Utility {
             UnityEngine.Debug.LogWarning ($"DEBUG_GEOGRAPHY_EEA on {deviceId}");
 #endif
             // 現在の同意情報の状況を確認
+            _consented = null;
             ConsentInformation.Update (request, (FormError consentError) => {
                 // コールバック
                 if (consentError != null) {
                     // エラー
                     Debug.LogError (consentError);
+                    _consented = false;
                     return;
                 }
                 // 更新情報を取得
@@ -264,15 +275,19 @@ namespace GoogleMobileAds.Utility {
         private static bool? _consented { get; set; } = null;
 
         /// <summary>再同意要求</summary>
-        public static void UmpPrivacyOptionsRequest () {
-            ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
-                if (showError != null) {
-                    Debug.LogError ("Error showing privacy options form with error: " + showError.Message);
-                } else {
-                    ReMake (forceReload: true);
-                    ;
-                }
-            });
+        public static async Task UmpPrivacyOptionsRequestAsync () {
+            if (_consented != null) {
+                var consented = false;
+                ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
+                    if (showError != null) {
+                        Debug.LogError ("Error showing privacy options form with error: " + showError.Message);
+                    } else {
+                        ReMake (forceReload: true);
+                    }
+                    consented = true;
+                });
+                await TaskEx.DelayUntil (() => consented);
+            }
         }
 #endif
         #endregion

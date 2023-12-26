@@ -166,7 +166,7 @@ public class SwitchPanel : MonoBehaviour {
 #endif
 
         /// <summary>ボタンが押された</summary>
-        public void OnPushButton (Button button) {
+        public async void OnPushButton (Button button) {
 #if ALLOW_ADS
 		var current = AdMobApi.GetActive (adSetBanner);
 		switch (button.name) {
@@ -200,8 +200,11 @@ public class SwitchPanel : MonoBehaviour {
 				break;
 			case "PrivacyButton":
 				Debug.Log ($"{button.name} {button.interactable}");
-#if UMP_ENABLED && !UNITY_EDITOR
-                AdMobApi.UmpPrivacyOptionsRequest ();
+#if UMP_ENABLED
+                button.interactable = false;
+                await AdMobApi.UmpPrivacyOptionsRequestAsync ();
+                AdMobApi.ResetLoadFailures ();
+                button.interactable = true;
 #endif
                 break;
 		}
