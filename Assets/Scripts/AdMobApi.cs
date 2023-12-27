@@ -653,7 +653,7 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>ロードに失敗した Called when an ad request failed to load.</summary>
 		protected void HandleAdFailedToLoad (LoadAdError error) {
 			Remove (false);
-			Debug.Log ($"Ad Failed To Load {Scene}:{Unit} {Type} {State} {_dirty} {ShowRequested} {error?.GetMessage ()}");
+			Debug.Log ($"Ad Failed To Load [{ConsecutiveFailures}] {Scene}:{Unit} {Type} {State} {_dirty} {ShowRequested} {error?.GetMessage ()}");
             FailedToLoad = true;
             ConsecutiveFailures++;
 		}
