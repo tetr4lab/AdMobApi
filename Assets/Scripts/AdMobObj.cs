@@ -176,6 +176,8 @@ namespace GoogleMobileAds.Utility {
 			}
 		}
 
+#if UNITY_ANDROID && !UNITY_2022_3_OR_NEWER
+        // 2022.3.16でFIXされた不具合(UUM-57151)への対応
         /// <summary>制御状態の変化</summary>
         private void OnApplicationPause (bool pause) {
             Debug.Log ($"OnApplicationPause { pause}");
@@ -184,6 +186,7 @@ namespace GoogleMobileAds.Utility {
                 AdMobApi.ReMake ();
             }
         }
+#endif
 
         /// <summary>駆動</summary>
         private async void Update () {
