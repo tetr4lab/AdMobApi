@@ -275,21 +275,31 @@ namespace GoogleMobileAds.Utility {
         private static bool? _consented { get; set; } = null;
 
         /// <summary>再同意要求</summary>
-        public static async Task UmpPrivacyOptionsRequestAsync () {
+        public static async Task<bool> UmpPrivacyOptionsRequestAsync () {
+            var consented = false;
             if (_consented != null && !entryPrivacyOption) {
                 entryPrivacyOption = true;
-                var consented = false;
-                ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
-                    if (showError != null) {
-                        Debug.LogError ("Error showing privacy options form with error: " + showError.Message);
-                    } else {
-                        ReMake (forceReload: true);
-                    }
-                    consented = true;
-                });
-                await TaskEx.DelayUntil (() => consented);
-                entryPrivacyOption = false;
+                try {
+                    var done = false;
+                    ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
+                        if (showError != null) {
+                            Debug.LogWarning ("Error showing privacy options form with error: " + showError.Message);
+                        } else {
+                            ReMake (forceReload: true);
+                            consented = true;
+                        }
+                        done = true;
+                    });
+                    await TaskEx.DelayUntil (() => done);
+                }
+                catch (Exception e) {
+                    Debug.LogError (e);
+                }
+                finally {
+                    entryPrivacyOption = false;
+                }
             }
+            return consented;
         }
 
         /// <summary>再入抑制</summary>
