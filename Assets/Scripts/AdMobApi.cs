@@ -276,7 +276,8 @@ namespace GoogleMobileAds.Utility {
 
         /// <summary>再同意要求</summary>
         public static async Task UmpPrivacyOptionsRequestAsync () {
-            if (_consented != null) {
+            if (_consented != null && !entryPrivacyOption) {
+                entryPrivacyOption = true;
                 var consented = false;
                 ConsentForm.ShowPrivacyOptionsForm ((FormError showError) => {
                     if (showError != null) {
@@ -287,8 +288,12 @@ namespace GoogleMobileAds.Utility {
                     consented = true;
                 });
                 await TaskEx.DelayUntil (() => consented);
+                entryPrivacyOption = false;
             }
         }
+
+        /// <summary>再入抑制</summary>
+        private static bool entryPrivacyOption = false;
 #endif
         #endregion
 
