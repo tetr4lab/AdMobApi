@@ -74,7 +74,7 @@ namespace GoogleMobileAds.Utility {
 
 		#region static
 		/// <summary>ロード失敗後のリトライ間隔フレーム数</summary>
-		private const int ReLoadIntervalFrames = 300;
+		public const int ReLoadIntervalFrames = 300;
 
 		// シングルトンインスタンス
 		private static AdMobObj instance;
