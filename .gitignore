@@ -90,6 +90,10 @@ crashlytics-build.properties
 ehthumbs.db
 Thumbs.db
 
+# NuGetForUnity
+/[Aa]ssets/Packages/
+/[Aa]ssets/Packages.meta
+
 # GetSharedData Log files
 [Ll]og~/
 
