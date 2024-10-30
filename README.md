@@ -3,7 +3,7 @@ title: Unity で Google Mobile Ads (AdMob) を使う
 tags: Unity AdMob Android iOS C#
 ---
 ## 前提
-- Unity 2022.3.36f1
+- Unity 2022.3.51f1
 - Google Mobile Ads Unity Plugin v9.1.1
 - Apple App Store、Google Play Store
 - この記事では、Google Mobile Ads Unity Pluginの一部機能を限定的に使用し、汎用性のない部分があります。
