@@ -1,0 +1,20 @@
+{
+    "name": "org.tetr4lab.admobapi",
+    "version": "1.0.0",
+    "displayName": "AdMobApi",
+    "description": "Using Google Mobile Ads (AdMob) with Unity",
+    "unity": "2021.3",
+    "documentationUrl": "https://github.com/tetr4lab/AdMobApi/",
+    "licenses": "MIT",
+    "dependencies": {},
+    "keywords": [
+        "AdMob",
+        "Google Mobile Ads Unity Plugin",
+        "Unity"
+    ],
+    "author": {
+        "name": "tetr4lab.",
+        "email": "info@tetr4lab.org",
+        "url": "https://tetr4lab.org/"
+    }
+}
