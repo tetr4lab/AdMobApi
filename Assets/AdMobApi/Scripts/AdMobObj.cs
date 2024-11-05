@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
-using Tetr4lab.TaskEx;
+using Tetr4lab.Utilities;
 
 /// <summary>
 /// AdMobを使うためのラッパー

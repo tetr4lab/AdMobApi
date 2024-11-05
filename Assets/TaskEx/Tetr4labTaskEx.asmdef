@@ -1,6 +1,6 @@
 {
     "name": "org.tetr4lab.taskex",
-    "rootNamespace": "Tetr4lab.TaskEx",
+    "rootNamespace": "Tetr4lab.Utilities",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Tetr4lab.TaskEx {
+namespace Tetr4lab.Utilities {
 
 	/// <summary>タスク拡張</summary>
 	public static class TaskEx {
