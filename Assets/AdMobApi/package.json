@@ -6,9 +6,7 @@
     "unity": "2021.3",
     "documentationUrl": "https://github.com/tetr4lab/AdMobApi/",
     "licenses": "MIT",
-    "dependencies": {
-        "org.tetr4lab.taskex": "1.0.0"
-    },
+    "dependencies": { },
     "keywords": [
         "AdMob",
         "Google Mobile Ads Unity Plugin",
