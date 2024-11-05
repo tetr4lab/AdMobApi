@@ -24,15 +24,11 @@ tags: Unity AdMob Android iOS C#
 - `Project Settings` > `Player` > `Resolution Scaling` > `Resolution Scaling Mode` が`Fixed DPI`だと、バナーのサイズを正しく取得できない可能性が高いです。
     - `Disabled`での使用を推奨します。
 
-## リソース
-### このプロジェクト
-- [ソース (GitHub)](https://github.com/tetr4lab/AdMobApi)
-
-### Google Mobile Ads Unity Plugin
+## Google Mobile Ads Unity Plugin
 - [ドキュメント (Google)](https://developers.google.com/admob/unity/quick-start)
 - [リリース (GitHub)](https://github.com/googleads/googleads-mobile-unity/releases)
 
-#### プラグインの導入方法
+### プラグインの導入方法
 - サンプルプロジェクトを最初に開いた場合など、Unityエディタ上にエラーが出ている場合は、[サンプルプロジェクトの使い方 > 導入](#サンプルプロジェクトの使い方)を参照してエラーを解消してください。
     - エラーが出ている状態でプラグインを導入すると、正常に機能しない場合があります。
 - 上記の「リリース」からGoogle Mobile Ads Unity Plugin のパッケージ(`.unitypackage`)をダウンロードします。
@@ -102,7 +98,7 @@ tags: Unity AdMob Android iOS C#
 ### 導入
 #### プロジェクト
 - プロジェクトに、[Google Mobile Ads Unity Plugin のパッケージを導入](#プラグインの導入方法)します。
-- プロジェクトに、`AdMobObj.cs`と`AdMobApi.cs`を導入します。
+- `Package Manager`で`Add package from git URL...`から、`https://github.com/tetr4lab/AdMobApi.git?path=/Assets/AdMobApi`を入力します。
   - シーンの適当なオブジェクトに`AdMobObj.cs`をアタッチします。
     - `Donot Destroy`で使用する場合は、ルートオブジェクトにアタッチしてください。
 - 必要に応じて、AdMobコンソールで広告ユニットのIDを生成します。
@@ -186,6 +182,32 @@ using GoogleMobileAds.Utility;
 - 再利用しない《ユニット》は、`instance.Destroy ()`で破棄できます。
 - 再利用しない《シーン》は、`AdMobApi.Destroy (string scene)`で破棄できます。
 - 通常は、破棄と生成を繰り返さず、表示を制御して使い回します。
+
+## 追加のアセット
+このリポジトリでは、以下のパッケージも提供しています。
+
+### TaskEx
+`System.Threading.Tasks.Task`のヘルパークラスです。
+```
+https://github.com/tetr4lab/AdMobApi.git?path=/Assets/TaskEx
+```
+
+#### ネームスペース
+```csharp
+using Tetr4lab.TaskEx;
+```
+
+#### 使用例
+```csharp
+await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
+```
+初期化の完了(`AdMobApi.Acceptable`が真になる)まで待機します。
+
+```csharp
+await TaskEx.DelayWhile (() => newScreenSize.x == Screen.width && newScreenSize.y == Screen.height, ChangeScreenDelayTime);
+```
+一定時間、画面サイズの変化を待機します。
+画面サイズが変化した後、この待機を実施して、さらに変化をチェックすることで、画面サイズの変化が安定したかどうかを検出しています。
 
 ## おわりに
 
