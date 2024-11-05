@@ -1,0 +1,19 @@
+{
+    "name": "org.tetr4lab.taskex",
+    "version": "1.0.0",
+    "displayName": "TaskEx",
+    "description": "Extentions of System.Threading.Tasks.Task",
+    "unity": "2021.3",
+    "documentationUrl": "https://github.com/tetr4lab/AdMobApi/",
+    "licenses": "MIT",
+    "dependencies": {},
+    "keywords": [
+        "Task",
+        "Unity"
+    ],
+    "author": {
+        "name": "tetr4lab.",
+        "email": "info@tetr4lab.org",
+        "url": "https://tetr4lab.org/"
+    }
+}
