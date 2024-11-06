@@ -96,6 +96,13 @@ tags: Unity AdMob Android iOS C#
   - 「Unityの`Scene Asset`」は、単に「シーン」と表記します。
 
 ### 導入
+
+#### 依存ライブラリ
+- `Package Manager` > `Add package from git URL...` で以下を入力します。
+```
+https://github.com/tetr4lab/Tetr4labNugetPackages.git?path=/Tetr4lab
+```
+
 #### プロジェクト
 - プロジェクトに、[Google Mobile Ads Unity Plugin のパッケージを導入](#プラグインの導入方法)します。
 - `Package Manager`で`Add package from git URL...`から、`https://github.com/tetr4lab/AdMobApi.git?path=/Assets/AdMobApi`を入力します。
@@ -182,32 +189,6 @@ using GoogleMobileAds.Utility;
 - 再利用しない《ユニット》は、`instance.Destroy ()`で破棄できます。
 - 再利用しない《シーン》は、`AdMobApi.Destroy (string scene)`で破棄できます。
 - 通常は、破棄と生成を繰り返さず、表示を制御して使い回します。
-
-## 追加のアセット
-このリポジトリでは、以下のパッケージも参照しています。
-
-### TaskEx
-`System.Threading.Tasks.Task`のヘルパークラスです。
-```
-https://github.com/tetr4lab/Tetr4labNugetPackages.git?path=/Tetr4lab
-```
-
-#### ネームスペース
-```csharp
-using Tetr4lab;
-```
-
-#### 使用例
-```csharp
-await TaskEx.DelayUntil (() => AdMobApi.Acceptable);
-```
-初期化の完了(`AdMobApi.Acceptable`が真になる)まで待機します。
-
-```csharp
-await TaskEx.DelayWhile (() => newScreenSize.x == Screen.width && newScreenSize.y == Screen.height, ChangeScreenDelayTime);
-```
-一定時間、画面サイズの変化を待機します。
-画面サイズが変化した後、この待機を実施して、さらに変化をチェックすることで、画面サイズの変化が安定したかどうかを検出しています。
 
 ## おわりに
 
