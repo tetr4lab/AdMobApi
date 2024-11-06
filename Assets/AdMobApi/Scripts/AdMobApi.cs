@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Serialization;
-using Tetr4lab.Utilities;
+using Tetr4lab;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Ump.Api;

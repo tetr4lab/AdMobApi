@@ -165,6 +165,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "org.tetr4lab": {
+      "version": "https://github.com/tetr4lab/Tetr4labNugetPackages.git?path=/Tetr4lab",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "0696b71b5ac26134ba526b9675d2fc8f176d52c1"
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,

@@ -184,17 +184,17 @@ using GoogleMobileAds.Utility;
 - 通常は、破棄と生成を繰り返さず、表示を制御して使い回します。
 
 ## 追加のアセット
-このリポジトリでは、以下のパッケージも提供しています。
+このリポジトリでは、以下のパッケージも参照しています。
 
 ### TaskEx
 `System.Threading.Tasks.Task`のヘルパークラスです。
 ```
-https://github.com/tetr4lab/AdMobApi.git?path=/Assets/TaskEx
+https://github.com/tetr4lab/Tetr4labNugetPackages.git?path=/Tetr4lab
 ```
 
 #### ネームスペース
 ```csharp
-using Tetr4lab.TaskEx;
+using Tetr4lab;
 ```
 
 #### 使用例

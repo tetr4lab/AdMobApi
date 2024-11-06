@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Tetr4lab.Utilities;
+using Tetr4lab;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Utility;
