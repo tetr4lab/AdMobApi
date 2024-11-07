@@ -4,7 +4,7 @@
     "displayName": "AdMobApi",
     "description": "Using Google Mobile Ads (AdMob) with Unity",
     "unity": "2021.3",
-    "documentationUrl": "https://github.com/tetr4lab/AdMobApi/",
+    "documentationUrl": "https://github.com/tetr4lab/AdMobApi.git?path=/Assets/AdMobApi",
     "licenses": "MIT",
     "dependencies": { },
     "keywords": [
