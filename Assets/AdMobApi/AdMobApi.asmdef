@@ -1,5 +1,5 @@
 {
-    "name": "org.tetr4lab.admobapi",
+    "name": "org.tetr4lab.unity.admobapi",
     "rootNamespace": "GoogleMobileAds.Utility",
     "references": [
         "GUID:2040b87c843c2114b9512da475e13975"

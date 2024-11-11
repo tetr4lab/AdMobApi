@@ -1,5 +1,5 @@
 {
-    "name": "org.tetr4lab.admobapi",
+    "name": "org.tetr4lab.unity.admobapi",
     "version": "1.0.0",
     "displayName": "AdMobApi",
     "description": "Using Google Mobile Ads (AdMob) with Unity",
