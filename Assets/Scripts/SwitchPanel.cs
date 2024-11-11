@@ -6,6 +6,9 @@ using Tetr4lab;
 #if ALLOW_ADS
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Utility;
+#if !DEBUGLOG
+using Debug = GoogleMobileAds.Utility.Debug;
+#endif
 #endif
 
 /// <summary>
