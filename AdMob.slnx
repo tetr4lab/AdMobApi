@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="org.tetr4lab.unity.admobapi.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+</Solution>
