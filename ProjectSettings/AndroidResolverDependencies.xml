@@ -9,7 +9,7 @@
   <files />
   <settings>
     <setting name="androidAbis" value="arm64-v8a,armeabi-v7a,x86_64" />
-    <setting name="bundleId" value="jp.nyanta.tetr4lab.AdMob" />
+    <setting name="bundleId" value="org.tetr4lab.admobtest" />
     <setting name="explodeAars" value="True" />
     <setting name="gradleBuildEnabled" value="True" />
     <setting name="gradlePropertiesTemplateEnabled" value="True" />
