@@ -386,8 +386,11 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>バナー位置</summary>
 		protected AdPosition bannerPosition;
 
-		/// <summary>有効</summary>
-		protected bool Valid => State != Status.DELETED;
+        /// <summary>バナー座標</summary>
+        protected Vector2Int? bannerCoordinates = null;
+
+        /// <summary>有効</summary>
+        protected bool Valid => State != Status.DELETED;
 
 #if UNITY_EDITOR
 		/// <summary>広告表示体オブジェクト名</summary>
@@ -429,8 +432,8 @@ namespace GoogleMobileAds.Utility {
 					// 見つからなければ広告サイズから推定
 					size = new Vector2 (bannerSize.Width, bannerSize.Height);
 					if (size.x <= 0f) { size.x = AdSize.FullWidth; }
-					if (size.y <= 0f) { size.y = 90; }
-					return size * (Screen.dpi / 160);
+					if (size.y <= 0f) { size.y = 90f; }
+					return size * (Screen.dpi / 160f);
 #else
 					// 実機では申告サイズ通りとみなす
 					return new Vector2 (bannerView.GetWidthInPixels (), bannerView.GetHeightInPixels ());
@@ -492,8 +495,40 @@ namespace GoogleMobileAds.Utility {
 			adsList.Add (this);
 		}
 
-		/// <summary>コンストラクタ アンカーアダプティブバナー</summary>
-		public AdMobApi (string scene, bool bottom) : this (scene, AdSize.GetCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth (AdSize.FullWidth), bottom ? AdPosition.Bottom : AdPosition.Top) { }
+        /// <summary>コンストラクタ バナー</summary>
+        /// <param name="scene">セット名</param>
+        /// <param name="size">サイズ</param>
+        /// <param name="pos">左上のピクセル座標</param>
+        /// <exception cref="ArgumentException">生成に失敗</exception>
+        public AdMobApi (string scene, AdSize size, Vector2Int pos) {
+            Type = AdType.Banner;
+            Scene = scene;
+            Unit = GetNextUnitNumber (scene);
+            bannerSize = size;
+            bannerCoordinates = pos;
+            Debug.Log ($"AdMobApi ({scene}:{Unit}, ({size.Width}, {size.Height}), {pos}) {size.AdType}");
+            foreach (var ad in adsList) {
+                if (ad.Scene == scene) {
+                    // 表示の重複
+                    if (ad.Type != AdType.Banner) {
+                        // 全画面広告が存在します
+                        throw new ArgumentException ($"Duplicate set {scene} {ad.Type} != {AdType.Banner}");
+                    } else if (ad.bannerCoordinates == pos) {
+                        // 既にバナーがある位置です
+                        throw new ArgumentException ($"Duplicate position {scene} {pos} {Unit} != {ad.Unit}");
+                    }
+                }
+                if (ad.bannerSize == size && !ad.bannerCoordinates.HasValue && ad.bannerCoordinates != pos) {
+                    // 広告ユニットの多重使用 (同じサイズのバナーを異なる場所に配置できません)
+                    throw new ArgumentException ($"Duplicate unit {scene} ({size.Width}, {size.Height}) {pos} != {(ad.bannerCoordinates.HasValue ? ad.bannerCoordinates : ad.bannerPosition)}");
+                }
+            }
+            Load ();
+            adsList.Add (this);
+        }
+
+        /// <summary>コンストラクタ アンカーアダプティブバナー</summary>
+        public AdMobApi (string scene, bool bottom) : this (scene, AdSize.GetCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth (AdSize.FullWidth), bottom ? AdPosition.Bottom : AdPosition.Top) { }
 
 		/// <summary>コンストラクタ リワード</summary>
 		public AdMobApi (string scene, Action<Reward> onAdRewarded) {
@@ -547,40 +582,49 @@ namespace GoogleMobileAds.Utility {
 				Debug.Log ($"Ad Load {Scene}:{Unit} {Type}");
 #if (UNITY_ANDROID || UNITY_IOS)
 				var adRequest = new AdRequest ();
-				if (Type == AdType.Rewarded) {
-					State = Status.LOADING;
-					RewardedAd.Load (AdMobObj.AdUnitId [Type], adRequest, (RewardedAd ad, LoadAdError error) => {
-						rewardedVideo = ad;
-						if (ad == null || error != null) {
-							HandleAdFailedToLoad (error);
-						} else {
-							rewardedVideo.OnAdFullScreenContentOpened += HandleAdOpened;
-							rewardedVideo.OnAdFullScreenContentClosed += HandleAdClosed;
-							HandleAdLoaded (ad.GetResponseInfo ());
-						}
-					});
-				} else if (Type == AdType.Interstitial) {
-					State = Status.LOADING;
-					InterstitialAd.Load (AdMobObj.AdUnitId [Type], adRequest, (InterstitialAd ad, LoadAdError error) => {
-						interstitial = ad;
-						if (ad == null || error != null) {
-							HandleAdFailedToLoad (error);
-						} else {
-							interstitial.OnAdFullScreenContentOpened += HandleAdOpened;
-							interstitial.OnAdFullScreenContentClosed += HandleAdClosed;
-							HandleAdLoaded (ad.GetResponseInfo ());
-						}
-					});
-				} else if (Type == AdType.Banner) {
-					if ((bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, bannerPosition)) != null) {
+                if (Type == AdType.Rewarded) {
+                    State = Status.LOADING;
+                    RewardedAd.Load (AdMobObj.AdUnitId [Type], adRequest, (RewardedAd ad, LoadAdError error) => {
+                        rewardedVideo = ad;
+                        if (ad == null || error != null) {
+                            HandleAdFailedToLoad (error);
+                        } else {
+                            rewardedVideo.OnAdFullScreenContentOpened += HandleAdOpened;
+                            rewardedVideo.OnAdFullScreenContentClosed += HandleAdClosed;
+                            HandleAdLoaded (ad.GetResponseInfo ());
+                        }
+                    });
+                } else if (Type == AdType.Interstitial) {
+                    State = Status.LOADING;
+                    InterstitialAd.Load (AdMobObj.AdUnitId [Type], adRequest, (InterstitialAd ad, LoadAdError error) => {
+                        interstitial = ad;
+                        if (ad == null || error != null) {
+                            HandleAdFailedToLoad (error);
+                        } else {
+                            interstitial.OnAdFullScreenContentOpened += HandleAdOpened;
+                            interstitial.OnAdFullScreenContentClosed += HandleAdClosed;
+                            HandleAdLoaded (ad.GetResponseInfo ());
+                        }
+                    });
+                } else if (Type == AdType.Banner) {
+                    if (bannerCoordinates.HasValue) {
+                        var xDp = Mathf.RoundToInt (bannerCoordinates.Value.x * 160f / Screen.dpi);
+                        var yDp = Mathf.RoundToInt (bannerCoordinates.Value.y * 160f / Screen.dpi);
+                        bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, xDp, yDp);
+                        Debug.Log ($"   Size {bannerSize}, Position {bannerCoordinates}px ({xDp}, {yDp})dp");
+                    } else {
+                        bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, bannerPosition);
+                        Debug.Log ($"   Size {bannerSize}, Position {bannerPosition}");
+                    }
+                    if (bannerView != null) {
 						bannerView.OnBannerAdLoaded += HandleAdLoaded;
 						bannerView.OnBannerAdLoadFailed += HandleAdFailedToLoad;
 						bannerView.OnAdClicked += HandleAdOpened;
 						State = Status.LOADING;
 						bannerView.LoadAd (adRequest);
 						bannerView.Hide ();
-					}
-				}
+                    }
+                }
 #endif
 			}
 		}

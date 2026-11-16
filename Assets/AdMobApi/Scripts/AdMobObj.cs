@@ -200,7 +200,7 @@ namespace GoogleMobileAds.Utility {
 				// デリゲートにも書けなくはないが、接続検査はメインスレッドで実行する必要がある
 				lastOnline = isOnLine;
 				lastScreenSize = new Vector2Int (Screen.width, Screen.height);
-				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line, Screen{lastScreenSize}");
+				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line, Screen{lastScreenSize}, dpi={Screen.dpi}");
 			}
 			if (AdMobApi.Acceptable && !isExclusionControling) {
 				isExclusionControling = true;
