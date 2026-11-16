@@ -386,9 +386,6 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>バナー位置</summary>
 		protected AdPosition bannerPosition;
 
-        /// <summary>バナー座標</summary>
-        protected Vector2Int? bannerCoordinates = null;
-
         /// <summary>有効</summary>
         protected bool Valid => State != Status.DELETED;
 
@@ -495,38 +492,6 @@ namespace GoogleMobileAds.Utility {
 			adsList.Add (this);
 		}
 
-        /// <summary>コンストラクタ バナー</summary>
-        /// <param name="scene">セット名</param>
-        /// <param name="size">サイズ</param>
-        /// <param name="pos">左上のピクセル座標</param>
-        /// <exception cref="ArgumentException">生成に失敗</exception>
-        public AdMobApi (string scene, AdSize size, Vector2Int pos) {
-            Type = AdType.Banner;
-            Scene = scene;
-            Unit = GetNextUnitNumber (scene);
-            bannerSize = size;
-            bannerCoordinates = pos;
-            Debug.Log ($"AdMobApi ({scene}:{Unit}, ({size.Width}, {size.Height}), {pos}) {size.AdType}");
-            foreach (var ad in adsList) {
-                if (ad.Scene == scene) {
-                    // 表示の重複
-                    if (ad.Type != AdType.Banner) {
-                        // 全画面広告が存在します
-                        throw new ArgumentException ($"Duplicate set {scene} {ad.Type} != {AdType.Banner}");
-                    } else if (ad.bannerCoordinates == pos) {
-                        // 既にバナーがある位置です
-                        throw new ArgumentException ($"Duplicate position {scene} {pos} {Unit} != {ad.Unit}");
-                    }
-                }
-                if (ad.bannerSize == size && !ad.bannerCoordinates.HasValue && ad.bannerCoordinates != pos) {
-                    // 広告ユニットの多重使用 (同じサイズのバナーを異なる場所に配置できません)
-                    throw new ArgumentException ($"Duplicate unit {scene} ({size.Width}, {size.Height}) {pos} != {(ad.bannerCoordinates.HasValue ? ad.bannerCoordinates : ad.bannerPosition)}");
-                }
-            }
-            Load ();
-            adsList.Add (this);
-        }
-
         /// <summary>コンストラクタ アンカーアダプティブバナー</summary>
         public AdMobApi (string scene, bool bottom) : this (scene, AdSize.GetCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth (AdSize.FullWidth), bottom ? AdPosition.Bottom : AdPosition.Top) { }
 
@@ -607,15 +572,7 @@ namespace GoogleMobileAds.Utility {
                         }
                     });
                 } else if (Type == AdType.Banner) {
-                    if (bannerCoordinates.HasValue) {
-                        var xDp = Mathf.RoundToInt (bannerCoordinates.Value.x * 160f / Screen.dpi);
-                        var yDp = Mathf.RoundToInt (bannerCoordinates.Value.y * 160f / Screen.dpi);
-                        bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, xDp, yDp);
-                        Debug.Log ($"   Size {bannerSize}, Position {bannerCoordinates}px ({xDp}, {yDp})dp");
-                    } else {
-                        bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, bannerPosition);
-                        Debug.Log ($"   Size {bannerSize}, Position {bannerPosition}");
-                    }
+                    bannerView = new BannerView (AdMobObj.AdUnitId [Type], bannerSize, bannerPosition);
                     if (bannerView != null) {
 						bannerView.OnBannerAdLoaded += HandleAdLoaded;
 						bannerView.OnBannerAdLoadFailed += HandleAdFailedToLoad;
