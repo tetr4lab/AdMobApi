@@ -2085,9 +2085,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3538bac0b3e6a134e9cb52d410b1e49a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panel: {fileID: 0}
-  HorizontalSafety: 1
-  VerticalSafety: 1
+  target: {fileID: 1329783079}
+  type: 0
 --- !u!1 &1334971916
 GameObject:
   m_ObjectHideFlags: 0
@@ -2223,7 +2222,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Center
+  m_Text: Center (safe area)
 --- !u!222 &1508635865
 CanvasRenderer:
   m_ObjectHideFlags: 0

@@ -123,8 +123,11 @@ namespace GoogleMobileAds.Utility {
 		/// <summary>画面のサイズ</summary>
 		private Vector2Int lastScreenSize;
 
-		/// <summary>失敗後の経過フレーム数</summary>
-		private int elapsedFramesSinceLoadFailure = -1;
+        /// <summary>セーフエリア</summary>
+        private Rect lastSafeArea;
+
+        /// <summary>失敗後の経過フレーム数</summary>
+        private int elapsedFramesSinceLoadFailure = -1;
 
 #if UNITY_EDITOR
 		/// <summary>表示体を特定する</summary>
@@ -200,7 +203,8 @@ namespace GoogleMobileAds.Utility {
 				// デリゲートにも書けなくはないが、接続検査はメインスレッドで実行する必要がある
 				lastOnline = isOnLine;
 				lastScreenSize = new Vector2Int (Screen.width, Screen.height);
-				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line, Screen{lastScreenSize}, dpi={Screen.dpi}");
+                lastSafeArea = Screen.safeArea;
+				Debug.Log ($"Set {(lastOnline ? "On" : "Off")}Line, Screen{lastScreenSize}, dpi={Screen.dpi}, SafeArea={lastSafeArea}");
 			}
 			if (AdMobApi.Acceptable && !isExclusionControling) {
 				isExclusionControling = true;
@@ -219,12 +223,13 @@ namespace GoogleMobileAds.Utility {
 				}
 				// 画面のサイズが変化したらバナーを再生成
 				var newScreenSize = new Vector2Int (Screen.width, Screen.height);
-				if (lastScreenSize != newScreenSize) {
+				if (lastScreenSize != newScreenSize || lastSafeArea != Screen.safeArea) {
 					Debug.Log ($"Change Screen{lastScreenSize} => {newScreenSize}");
 					await TaskEx.DelayWhile (() => newScreenSize.x == Screen.width && newScreenSize.y == Screen.height, ChangeScreenDelayTime);
 					if (newScreenSize.x == Screen.width && newScreenSize.y == Screen.height) {
 						// 規定時間まで状況が継続した
 						lastScreenSize = newScreenSize;
+                        lastSafeArea = Screen.safeArea;
 						AdMobApi.ReMake (type: AdType.Banner);
 						remaking = true;
 					}
